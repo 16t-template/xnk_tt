@@ -57,8 +57,8 @@
 ### KIEM_KHO
 
 - Sheet: `KIEM_KHO`
-- Vung doc: `KIEM_KHO!A2:G`
-- Cot du lieu: `id`, `ngay`, `id_sp`, `slg_ton`, `thuc_te`, `slg_lech`, `ghi_chu`
+- Vung doc: `KIEM_KHO!A2:H`
+- Cot du lieu: `id`, `ngay`, `id_sp`, `slg_ton`, `thuc_te`, `slg_lech`, `vi_tri`, `ghi_chu`
 - Khi chon `id_sp`, cot `slg_ton` tu dong lay ton cuoi cua san pham trong `TON_KHO`.
 - Cot `slg_ton` khong cho sua tren form.
 - Cot `thuc_te` mac dinh bang `slg_ton`; nguoi dung co the sua `thuc_te` de ghi so kiem thuc te.

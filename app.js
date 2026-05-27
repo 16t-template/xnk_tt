@@ -70,8 +70,8 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                     imgCol: -1
                 },
                 'KIEM_KHO': {
-                    range: 'KIEM_KHO!A2:G',
-                    headers: ['id', 'ngay', 'id_sp', 'slg_ton', 'thuc_te', 'slg_lech', 'ghi_chu'],
+                    range: 'KIEM_KHO!A2:H',
+                    headers: ['id', 'ngay', 'id_sp', 'slg_ton', 'thuc_te', 'slg_lech', 'vi_tri', 'ghi_chu'],
                     hiddenCols: [0],
                     priceCols: [],
                     imgCol: -1
