@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XNK TT - Danh sach san pham</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsrsasign/10.5.25/jsrsasign-all-min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+    <div id="loading" class="loading-mask">
+        <div class="spinner"></div>
+        <p>Đang tải dữ liệu...</p>
+    </div>
+
+    <div id="dropOverlay">
+        <div class="drop-message">
+            <i data-lucide="upload-cloud" style="width: 48px; height: 48px;"></i>
+            Thả file vào đây để tải sản phẩm lên ${currentTab}
+        </div>
+    </div>
+
+    <div class="mobile-appbar">
+        <button class="mobile-menu-btn" type="button" onclick="toggleMobileNav()" title="Mo menu">
+            <i data-lucide="menu" style="width:22px;"></i>
+        </button>
+        <div class="mobile-brand">
+            <div class="logo">XNK<br>TT</div>
+            <div>
+                <strong>XNK TT</strong>
+                <span id="mobileTabTitle">DS_SP</span>
+            </div>
+        </div>
+        <button class="mobile-reload-btn" type="button" onclick="reloadCurrentTab()" title="Load lai">
+            <i data-lucide="refresh-cw" style="width:20px;"></i>
+        </button>
+    </div>
+    <div class="mobile-nav-backdrop" onclick="closeMobileNav()"></div>
+
+    <div class="app-shell">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="brand">
+                    <div class="logo">XNK<br>TT</div>
+                    <h1 id="pageTitle">XNK TT</h1>
+                </div>
+                <button class="sidebar-toggle" type="button" onclick="toggleSidebar()" title="Thu gon menu">
+                    <i data-lucide="panel-left-close" style="width:18px;"></i>
+                </button>
+            </div>
+
+            <div class="tabs">
+                <div class="tab active" data-tab="DS_SP" onclick="switchTab('DS_SP')">
+                    <i data-lucide="package" style="width:18px;"></i>
+                    <span>DS_SP</span>
+                </div>
+                <div class="tab" data-tab="XUAT_KHO" onclick="switchTab('XUAT_KHO')">
+                    <i data-lucide="log-out" style="width:18px;"></i>
+                    <span>XUAT_KHO</span>
+                </div>
+                <div class="tab" data-tab="BC_XUAT_KHO" onclick="switchTab('BC_XUAT_KHO')">
+                    <i data-lucide="file-bar-chart" style="width:18px;"></i>
+                    <span>BC_XUAT_KHO</span>
+                </div>
+                <div class="tab" data-tab="NHAP_KHO" onclick="switchTab('NHAP_KHO')">
+                    <i data-lucide="log-in" style="width:18px;"></i>
+                    <span>NHAP_KHO</span>
+                </div>
+                <div class="tab" data-tab="TON_KHO" onclick="switchTab('TON_KHO')">
+                    <i data-lucide="warehouse" style="width:18px;"></i>
+                    <span>TON_KHO</span>
+                </div>
+                <div class="tab" data-tab="KIEM_KHO" onclick="switchTab('KIEM_KHO')">
+                    <i data-lucide="clipboard-list" style="width:18px;"></i>
+                    <span>KIEM_KHO</span>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <div class="header-container">
+                <div id="headerActions">
+                    <div class="search-container">
+                        <i data-lucide="search" class="search-icon" style="width: 18px;"></i>
+                        <input type="text" id="searchInput" class="search-input" placeholder="Tim kiem nhanh..."
+                            oninput="filterTable()">
+                    </div>
+                    <input id="nccFilter" class="filter-input" type="text" list="nccOptions" placeholder="Loc NCC..."
+                        oninput="filterTable()">
+                    <input id="partnerFilter" class="filter-input module-filter" type="text" list="partnerFilterOptions"
+                        placeholder="Loc doi tac..." oninput="filterTable()">
+                    <input id="idDonFilter" class="filter-input module-filter" type="text" list="idDonFilterOptions"
+                        placeholder="Loc id_don..." oninput="filterTable()">
+                    <input id="dateFromFilter" class="filter-input module-filter" type="date" onchange="filterTable()">
+                    <input id="dateToFilter" class="filter-input module-filter" type="date" onchange="filterTable()">
+                    <input id="idSpFilter" class="filter-input module-filter" type="text" list="filterIdSpOptions"
+                        placeholder="Loc id_sp..." oninput="filterTable()">
+
+                    <button id="reloadBtn" type="button" onclick="reloadCurrentTab()">
+                        <i data-lucide="refresh-cw" style="width:18px;"></i> Load lai
+                    </button>
+                    <button id="uploadBtn" onclick="document.getElementById('fileInput').click()">
+                        <i data-lucide="upload" style="width:18px;"></i> Tai Du Lieu Len
+                    </button>
+                    <button id="addBtn" type="button" onclick="openRecordForm()">
+                        <i data-lucide="plus" style="width:18px;"></i> Them moi
+                    </button>
+                    <input type="file" id="fileInput" hidden multiple accept=".xlsx, .xls, .csv" onchange="handleFileUpload(event)">
+                </div>
+            </div>
+
+            <div class="table-wrapper" id="tableWrapper">
+                <table id="dataTable">
+                    <thead id="tableHead">
+                        <!-- Headers will be injected here -->
+                    </thead>
+                    <tbody id="tableBody">
+                        <!-- Data rows will be injected here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="pagination" class="pagination"></div>
+        </main>
+    </div>
+
+    <div class="modal-mask" id="productModal">
+        <form class="modal" onsubmit="saveRecordFromForm(event)">
+            <div class="modal-header">
+                <h2 id="productModalTitle">Them moi</h2>
+                <button type="button" class="icon-btn" onclick="closeProductForm()" title="Dong">
+                    <i data-lucide="x" style="width:18px;"></i>
+                </button>
+            </div>
+            <input type="hidden" id="editingSheetRow">
+            <div id="formFields" class="form-fields"></div>
+            <div class="modal-actions">
+                <button type="button" class="secondary-btn" onclick="closeProductForm()">Huy</button>
+                <button type="submit" class="primary-btn">Luu</button>
+            </div>
+        </form>
+    </div>
+    <datalist id="nccOptions"></datalist>
+    <datalist id="partnerFilterOptions"></datalist>
+    <datalist id="idDonFilterOptions"></datalist>
+    <datalist id="filterIdSpOptions"></datalist>
+    <script src="app.js"></script>
+</body>
+
+</html>
