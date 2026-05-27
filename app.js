@@ -819,6 +819,16 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             container.innerHTML = headers.map((header, idx) => {
                 const rawValue = getFormRowValue(row, header, idx);
                 const value = escapeHtml(rawValue);
+                if (currentTab === 'KIEM_KHO' && header === 'slg_ton') {
+                    const thucTeIdx = headers.indexOf('thuc_te');
+                    const slgLechIdx = headers.indexOf('slg_lech');
+                    const thucTeValue = getFormRowValue(row, 'thuc_te', thucTeIdx);
+                    const slgLechValue = getFormRowValue(row, 'slg_lech', slgLechIdx);
+                    return `<div class="kiem-kho-count-row"><label><span>slg_ton</span><input id="formField_${idx}" data-field="${header}" type="text" inputmode="numeric" value="${escapeHtml(formatNumber(rawValue))}" readonly></label><label><span>thuc_te</span><div class="stepper"><button type="button" onclick="adjustQuantity(-1)">-</button><input id="formField_${thucTeIdx}" data-field="thuc_te" type="text" inputmode="numeric" value="${escapeHtml(formatNumber(thucTeValue || '0'))}" oninput="formatNumberWhileTyping(this)"><button type="button" onclick="adjustQuantity(1)">+</button></div></label><label><span>slg_lech</span><input id="formField_${slgLechIdx}" data-field="slg_lech" type="text" inputmode="numeric" value="${escapeHtml(formatNumber(slgLechValue))}" readonly></label></div>`;
+                }
+                if (currentTab === 'KIEM_KHO' && (header === 'thuc_te' || header === 'slg_lech')) {
+                    return '';
+                }
                 if (header === 'id') {
                     const idValue = row ? rawValue : generateNextId();
                     return `<input id="formField_${idx}" data-field="${header}" type="hidden" value="${escapeHtml(idValue)}">`;

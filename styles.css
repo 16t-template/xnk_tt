@@ -460,8 +460,16 @@
         }
 
         .form-fields label:has(textarea),
+        .kiem-kho-count-row,
         .form-fields input[type="hidden"] {
             grid-column: 1 / -1;
+        }
+
+        .kiem-kho-count-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(170px, 1.35fr) minmax(0, 1fr);
+            gap: 12px;
+            align-items: end;
         }
 
         body.sidebar-collapsed .modal {
@@ -474,6 +482,10 @@
             }
 
             .form-fields {
+                grid-template-columns: 1fr;
+            }
+
+            .kiem-kho-count-row {
                 grid-template-columns: 1fr;
             }
         }
