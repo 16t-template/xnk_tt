@@ -649,6 +649,13 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             return [...new Set([...(DEFAULT_ENUMS[header] || []), ...currentValues])].sort();
         }
 
+        function renderDatalistOptions(values) {
+            return [...new Set(values.filter(Boolean).map(value => String(value).trim()))]
+                .sort()
+                .map(value => `<option value="${escapeHtml(value)}"></option>`)
+                .join('');
+        }
+
         function renderProductOptions(query = '') {
             const term = String(query || '').toLowerCase().trim();
             const matches = productCatalog
@@ -852,7 +859,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                     return `<label><span>${header}</span><div class="stepper"><button type="button" onclick="adjustQuantity(-1)">-</button><input id="formField_${idx}" data-field="${header}" type="text" inputmode="numeric" value="${escapeHtml(formatNumber(rawValue || '0'))}" oninput="formatNumberWhileTyping(this)"><button type="button" onclick="adjustQuantity(1)">+</button></div></label>`;
                 }
                 if (header === 'vi_tri') {
-                    return `<label><span>${header}</span><select id="formField_${idx}" data-field="${header}"><option value="">Chon vi tri</option>${getEnumValues(header).map(option => `<option value="${escapeHtml(option)}"${option === rawValue ? ' selected' : ''}>${escapeHtml(option)}</option>`).join('')}</select></label>`;
+                    return `<label><span>${header}</span><input id="formField_${idx}" data-field="${header}" type="text" value="${value}" list="viTriOptions"><datalist id="viTriOptions">${renderDatalistOptions(getEnumValues(header))}</datalist></label>`;
                 }
                 if (header === 'ghi_chu') {
                     return `<label><span>${header}</span><textarea id="formField_${idx}" data-field="${header}" rows="4">${value}</textarea></label>`;
