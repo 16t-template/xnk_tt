@@ -485,9 +485,6 @@
                 grid-template-columns: 1fr;
             }
 
-            .kiem-kho-count-row {
-                grid-template-columns: 1fr;
-            }
         }
 
         .modal input,
@@ -860,6 +857,21 @@
             .form-fields {
                 grid-template-columns: 1fr;
                 max-height: calc(100vh - 230px);
+            }
+
+            .kiem-kho-count-row {
+                grid-template-columns: minmax(72px, 1fr) minmax(128px, 1.4fr) minmax(72px, 1fr);
+                gap: 8px;
+            }
+
+            .kiem-kho-count-row .stepper {
+                grid-template-columns: 34px minmax(0, 1fr) 34px;
+                gap: 6px;
+            }
+
+            .kiem-kho-count-row input {
+                padding-left: 8px;
+                padding-right: 8px;
             }
 
             .modal-actions {
