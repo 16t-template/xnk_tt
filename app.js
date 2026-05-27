@@ -221,6 +221,9 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                 if (currentTab === 'TON_KHO') {
                     allData = await buildInventoryDisplayRows(allData, token);
                 }
+                if (currentTab === 'KIEM_KHO') {
+                    allData.reverse();
+                }
                 filteredData = tabConfig.reportType === 'xuat_kho_by_product'
                     ? buildExportReportByProduct(allData)
                     : [...allData];
@@ -656,6 +659,24 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                 .join('');
         }
 
+        function getPreviousValues(header) {
+            const idx = getStorageHeaders().indexOf(header);
+            if (idx < 0) return [];
+            return [...new Set(allData.map(row => String(row[idx] || '').trim()).filter(Boolean))].sort();
+        }
+
+        function renderViTriButtons() {
+            const values = getPreviousValues('vi_tri').slice(0, 24);
+            if (!values.length) return '';
+            return `<div class="vi-tri-buttons">${values.map(value => `<button type="button" data-value="${escapeHtml(value)}" onclick="selectViTriSuggestion(this.dataset.value)">${escapeHtml(value)}</button>`).join('')}</div>`;
+        }
+
+        function selectViTriSuggestion(value) {
+            const input = document.querySelector('[data-field="vi_tri"]');
+            if (input) input.value = value;
+        }
+
+
         function renderProductOptions(query = '') {
             const term = String(query || '').toLowerCase().trim();
             const matches = productCatalog
@@ -869,7 +890,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                     return `<label><span>${header}</span><div class="stepper"><button type="button" onclick="adjustQuantity(-1)">-</button><input id="formField_${idx}" data-field="${header}" type="text" inputmode="numeric" value="${escapeHtml(formatNumber(rawValue || '0'))}" oninput="formatNumberWhileTyping(this)"><button type="button" onclick="adjustQuantity(1)">+</button></div></label>`;
                 }
                 if (header === 'vi_tri') {
-                    return `<label><span>${header}</span><input id="formField_${idx}" data-field="${header}" type="text" value="${value}" list="viTriOptions"><datalist id="viTriOptions">${renderDatalistOptions(getEnumValues(header))}</datalist></label>`;
+                    return `<label class="vi-tri-field"><span>${header}</span><input id="formField_${idx}" data-field="${header}" type="text" value="${value}" list="viTriOptions"><datalist id="viTriOptions">${renderDatalistOptions(getPreviousValues(header))}</datalist>${renderViTriButtons()}</label>`;
                 }
                 if (header === 'ghi_chu') {
                     return `<label><span>${header}</span><textarea id="formField_${idx}" data-field="${header}" rows="4">${value}</textarea></label>`;

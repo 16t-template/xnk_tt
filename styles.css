@@ -574,6 +574,30 @@
             font-weight: 500;
         }
 
+        .vi-tri-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        .vi-tri-buttons button {
+            border: 1px solid var(--border);
+            background: #f8fafc;
+            color: #334155;
+            border-radius: 8px;
+            padding: 7px 10px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .vi-tri-buttons button:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: #eef2ff;
+        }
+
         .modal-actions {
             display: flex;
             justify-content: flex-end;
