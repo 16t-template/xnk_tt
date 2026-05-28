@@ -23,8 +23,8 @@
 ### XUAT_KHO
 
 - Sheet: `XUAT_KHO`
-- Vung doc: `XUAT_KHO!A2:N`
-- Cot du lieu: `id`, `id_don`, `ngay`, `npp`, `id_sp`, `ten_sp`, `don_gia`, `slg`, `thanh_tien`, `id_nv`, `ghi_chu`, `vi_tri`, `tinh_trang`, `trang_thai`
+- Vung doc: `XUAT_KHO!A2:R`
+- Cot du lieu: `id`, `id_don`, `ngay`, `npp`, `id_sp`, `ten_sp`, `don_gia`, `slg`, `thanh_tien`, `slg_nhat`, `tich_nhat`, `slg_đi`, `tich_slg_di`, `id_nv`, `ghi_chu`, `vi_tri`, `tinh_trang`, `trang_thai`
 
 ### BC_XUAT_KHO
 
@@ -44,6 +44,14 @@
 - Sheet nguon goi y khach hang/nha cung cap: `DS_KHACH`
 - Vung doc: `DS_KHACH!A2:E`
 - Cot du lieu: `id`, `ncc_npp`, `ten`, `sdt`, `dia_chi`
+
+### DSNV
+
+- Sheet nguon dang nhap nhan vien: `DSNV`
+- Vung doc: `DSNV!A2:G`
+- Cot du lieu: `id`, `ho_ten`, `hinh_anh`, `gioi_tinh`, `ngay_sinh`, `quyen`, `mk`
+- Ten dang nhap la `id`.
+- Mat khau la `mk`.
 
 ### TON_KHO
 
@@ -66,6 +74,10 @@
 
 ## Chuc nang giao dien
 
+- Man dang nhap doc tai khoan tu sheet `DSNV`; chi vao app khi `id` va `mk` khop.
+- Tai khoan co `quyen = KHO` khi vao `XUAT_KHO` chi thay cac cot: `id_don`, `ngay`, `npp`, `id_sp`, `ten_sp`, `slg`, `slg_nhat`, `tich_nhat`, `slg_đi`, `tich_slg_di`, `tinh_trang`, `trang_thai`.
+- Trong view `XUAT_KHO` cua quyen `KHO`, cot `slg_nhat` cho nhap truc tiep tren bang va cot `tich_nhat` hien dang checkbox.
+- Tren dien thoai, `XUAT_KHO` hien dang the thay vi bang ngang; moi the gom thong tin don, san pham, so luong, trang thai va cac truong thao tac nhanh.
 - Sidebar trai co module `DS_SP`, `XUAT_KHO`, `BC_XUAT_KHO`, `NHAP_KHO`, `TON_KHO`, `KIEM_KHO`.
 - Nut thu gon/mo rong sidebar dung `toggleSidebar()`.
 - Tren dien thoai co thanh app co dinh phia tren, nut menu mo danh sach module dang drawer, nut load lai nam ngay tren thanh app.

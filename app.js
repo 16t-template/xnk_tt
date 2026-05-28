@@ -38,15 +38,15 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                     imgCol: -1
                 },
                 'XUAT_KHO': {
-                    range: 'XUAT_KHO!A2:N',
-                    headers: ['id', 'id_don', 'ngay', 'npp', 'id_sp', 'ten_sp', 'don_gia', 'slg', 'thanh_tien', 'id_nv', 'ghi_chu', 'vi_tri', 'tinh_trang', 'trang_thai'],
+                    range: 'XUAT_KHO!A2:R',
+                    headers: ['id', 'id_don', 'ngay', 'npp', 'id_sp', 'ten_sp', 'don_gia', 'slg', 'thanh_tien', 'slg_nhat', 'tich_nhat', 'slg_đi', 'tich_slg_di', 'id_nv', 'ghi_chu', 'vi_tri', 'tinh_trang', 'trang_thai'],
                     hiddenCols: [0],
                     priceCols: [6, 8],
                     imgCol: -1
                 },
                 'BC_XUAT_KHO': {
-                    range: 'XUAT_KHO!A2:N',
-                    sourceHeaders: ['id', 'id_don', 'ngay', 'npp', 'id_sp', 'ten_sp', 'don_gia', 'slg', 'thanh_tien', 'id_nv', 'ghi_chu', 'vi_tri', 'tinh_trang', 'trang_thai'],
+                    range: 'XUAT_KHO!A2:R',
+                    sourceHeaders: ['id', 'id_don', 'ngay', 'npp', 'id_sp', 'ten_sp', 'don_gia', 'slg', 'thanh_tien', 'slg_nhat', 'tich_nhat', 'slg_đi', 'tich_slg_di', 'id_nv', 'ghi_chu', 'vi_tri', 'tinh_trang', 'trang_thai'],
                     headers: ['id_sp', 'so_luong'],
                     hiddenCols: [],
                     priceCols: [],
@@ -107,6 +107,9 @@ sR2Sh8e3h3Knd6j1tceRIFU=
         let productCatalog = [];
         let customerCatalog = [];
         let inventoryStockByProduct = new Map();
+        let currentUser = null;
+        let adminSessionUser = null;
+        let employeeCatalog = [];
         const PRODUCT_SUGGESTION_LIMIT = 50;
         const CUSTOMER_SUGGESTION_LIMIT = 50;
         const WAREHOUSE_PAGE_SIZE = 200;
@@ -241,8 +244,37 @@ sR2Sh8e3h3Knd6j1tceRIFU=
         function renderHeaders() {
             const head = document.getElementById('tableHead');
             const tabConfig = CONFIG.tabs[currentTab];
-            const hiddenCols = tabConfig.hiddenCols || [];
+            if (isMobileXuatKhoView()) {
+                head.innerHTML = '<tr><th>XUAT_KHO</th></tr>';
+                return;
+            }
+            const hiddenCols = getHiddenColsForCurrentView();
             head.innerHTML = `<tr>${tabConfig.headers.map((h, idx) => hiddenCols.includes(idx) ? '' : `<th>${h}</th>`).join('')}</tr>`;
+        }
+
+        function getCurrentUserRole() {
+            return String(currentUser?.quyen || '').trim().toUpperCase();
+        }
+
+        function isKhoXuatKhoView() {
+            return currentTab === 'XUAT_KHO' && getCurrentUserRole() === 'KHO';
+        }
+
+        function isMobileXuatKhoView() {
+            return currentTab === 'XUAT_KHO' && window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
+        }
+
+        function isMobileDsSpView() {
+            return currentTab === 'DS_SP' && window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
+        }
+
+        function getHiddenColsForCurrentView() {
+            const tabConfig = CONFIG.tabs[currentTab];
+            if (!isKhoXuatKhoView()) return tabConfig.hiddenCols || [];
+            const visibleHeaders = ['id_don', 'ngay', 'npp', 'id_sp', 'ten_sp', 'slg', 'slg_nhat', 'tich_nhat', 'slg_đi', 'tich_slg_di', 'tinh_trang', 'trang_thai'];
+            return tabConfig.headers
+                .map((header, idx) => visibleHeaders.includes(header) ? -1 : idx)
+                .filter(idx => idx >= 0);
         }
 
         function normalizeRow(row) {
@@ -267,6 +299,104 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             if (!res.ok) return [];
             const data = await res.json();
             return data.values || [];
+        }
+
+        async function loadEmployees() {
+            if (employeeCatalog.length) return employeeCatalog;
+            const rows = await fetchSheetRows('DSNV!A2:G');
+            employeeCatalog = rows
+                .map(row => ({
+                    id: String(row[0] || '').trim(),
+                    ho_ten: String(row[1] || '').trim(),
+                    hinh_anh: String(row[2] || '').trim(),
+                    gioi_tinh: String(row[3] || '').trim(),
+                    ngay_sinh: String(row[4] || '').trim(),
+                    quyen: String(row[5] || '').trim(),
+                    mk: String(row[6] || '').trim()
+                }))
+                .filter(item => item.id);
+            return employeeCatalog;
+        }
+
+        async function handleLogin(event) {
+            event.preventDefault();
+            const username = document.getElementById('loginUser')?.value.trim() || '';
+            const password = document.getElementById('loginPassword')?.value.trim() || '';
+            const error = document.getElementById('loginError');
+            if (error) error.innerText = '';
+            document.getElementById('loading').style.display = 'flex';
+            document.querySelector('#loading p').innerText = 'Dang dang nhap...';
+            try {
+                const employees = await loadEmployees();
+                const employee = employees.find(item => item.id === username && item.mk === password);
+                if (!employee) throw new Error('Sai ten dang nhap hoac mat khau.');
+                await setCurrentUser(employee, true);
+                await switchTab(CONFIG.tabs[currentTab] ? currentTab : 'DS_SP');
+            } catch (err) {
+                if (error) error.innerText = err.message;
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        async function setCurrentUser(employee, isDirectLogin = false) {
+            currentUser = employee;
+            if (isDirectLogin && String(employee?.quyen || '').trim().toUpperCase() === 'ADMIN') {
+                adminSessionUser = employee;
+                try { sessionStorage.setItem('xnkTtAdminUser', JSON.stringify(employee)); } catch (_) { }
+            }
+            try { sessionStorage.setItem('xnkTtCurrentUser', JSON.stringify(employee)); } catch (_) { }
+            await loadEmployees().catch(() => []);
+            showAuthenticatedApp();
+        }
+
+        function showAuthenticatedApp() {
+            document.body.classList.add('is-authenticated');
+            const userLabel = document.getElementById('currentUserLabel');
+            if (userLabel && currentUser) userLabel.innerText = `${currentUser.ho_ten || currentUser.id} (${currentUser.id})`;
+            renderAdminAccountSwitcher();
+        }
+
+        function renderAdminAccountSwitcher() {
+            const wrapper = document.getElementById('adminAccountSwitcher');
+            const select = document.getElementById('adminAccountSelect');
+            if (!wrapper || !select) return;
+            const canSwitch = String(currentUser?.quyen || '').trim().toUpperCase() === 'ADMIN'
+                || String(adminSessionUser?.quyen || '').trim().toUpperCase() === 'ADMIN';
+            wrapper.style.display = canSwitch ? 'grid' : 'none';
+            if (!canSwitch) return;
+            const options = employeeCatalog
+                .filter(employee => employee.id !== currentUser.id)
+                .map(employee => {
+                    const label = [employee.id, employee.ho_ten, employee.quyen].filter(Boolean).join(' - ');
+                    return `<option value="${escapeHtml(employee.id)}">${escapeHtml(label)}</option>`;
+                })
+                .join('');
+            select.innerHTML = `<option value="">Chon tai khoan</option>${options}`;
+        }
+
+        async function adminSwitchAccount(employeeId) {
+            const id = String(employeeId || '').trim();
+            if (!id) return;
+            const canSwitch = String(currentUser?.quyen || '').trim().toUpperCase() === 'ADMIN'
+                || String(adminSessionUser?.quyen || '').trim().toUpperCase() === 'ADMIN';
+            if (!canSwitch) return;
+            const employees = await loadEmployees();
+            const employee = employees.find(item => item.id === id);
+            if (!employee) return;
+            await setCurrentUser(employee);
+            const select = document.getElementById('adminAccountSelect');
+            if (select) select.value = '';
+        }
+
+        function logout() {
+            currentUser = null;
+            adminSessionUser = null;
+            try { sessionStorage.removeItem('xnkTtCurrentUser'); } catch (_) { }
+            try { sessionStorage.removeItem('xnkTtAdminUser'); } catch (_) { }
+            document.body.classList.remove('is-authenticated');
+            document.getElementById('loginPassword').value = '';
+            renderAdminAccountSwitcher();
         }
 
         function sumMovementByProduct(rows, tabName) {
@@ -553,6 +683,63 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                 const err = await res.json().catch(() => ({}));
                 throw new Error(err.error?.message || 'Cap nhat dong that bai.');
             }
+        }
+
+        async function writeCellValue(sheetName, sheetRow, colIdx, value) {
+            const token = await getAccessToken();
+            const rowNum = Number(sheetRow);
+            if (!rowNum || rowNum < 2 || colIdx < 0) throw new Error('Khong xac dinh duoc o can cap nhat.');
+            const col = colName(colIdx);
+            const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.spreadsheetId}/values/${sheetName}!${col}${rowNum}:${col}${rowNum}?valueInputOption=RAW`, {
+                method: 'PUT',
+                headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ values: [[value]] })
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.error?.message || 'Cap nhat o that bai.');
+            }
+        }
+
+        async function saveKhoInlineValue(rowIndex, field, rawValue) {
+            if (!isKhoXuatKhoView()) return;
+            const row = filteredData[rowIndex];
+            if (!row) return;
+            const headers = CONFIG.tabs.XUAT_KHO.headers;
+            const colIdx = headers.indexOf(field);
+            const value = field === 'slg_nhat' ? String(parseNumber(rawValue)) : rawValue;
+            try {
+                await writeCellValue('XUAT_KHO', getDataSheetRow(row), colIdx, value);
+                row[colIdx] = value;
+                const source = allData.find(item => getDataSheetRow(item) === getDataSheetRow(row));
+                if (source) source[colIdx] = value;
+                
+                if (field === 'slg_nhat' && isMobileXuatKhoView()) {
+                    const slgValue = parseNumber(row[headers.indexOf('slg')]);
+                    const slgNhatValue = parseNumber(value);
+                    const slgDisplay = document.getElementById(`slg_display_${rowIndex}`);
+                    if (slgDisplay) {
+                        if (slgValue > 0 && slgValue === slgNhatValue) {
+                            slgDisplay.classList.add('text-green');
+                        } else {
+                            slgDisplay.classList.remove('text-green');
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Khong cap nhat duoc ' + field + ': ' + err.message);
+            }
+        }
+
+        function adjustInlineQuantity(rowIndex, field, delta) {
+            const inputId = `${field}_${rowIndex}`;
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            const currentVal = parseNumber(input.value) || 0;
+            const nextVal = Math.max(0, currentVal + delta);
+            input.value = formatNumber(nextVal);
+            saveKhoInlineValue(rowIndex, field, input.value);
         }
 
         async function appendRecordRows(rows) {
@@ -855,7 +1042,8 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                     return `<input id="formField_${idx}" data-field="${header}" type="hidden" value="${escapeHtml(idValue)}">`;
                 }
                 if (header === 'id_nv') {
-                    return `<input id="formField_${idx}" data-field="${header}" type="hidden" value="${value}">`;
+                    const nvValue = rawValue || currentUser?.id || '';
+                    return `<input id="formField_${idx}" data-field="${header}" type="hidden" value="${escapeHtml(nvValue)}">`;
                 }
                 const list = currentTab === 'DS_SP' && header === 'ncc' ? ' list="nccOptions"' : '';
                 if (currentTab === 'DS_SP' && header === 'ncc') {
@@ -874,7 +1062,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                     const nameValue = rawValue || getProductNameById(document.querySelector('[data-field="id_sp"]')?.value || '');
                     return `<label><span>${header}</span><input id="formField_${idx}" data-field="${header}" type="text" value="${escapeHtml(nameValue)}" readonly></label>`;
                 }
-                if (header === 'don_gia') {
+                if (header === 'don_gia' || header === 'slg_nhat' || header === 'tich_nhat' || header === 'slg_đi' || header === 'tich_slg_di') {
                     return `<label><span>${header}</span><input id="formField_${idx}" data-field="${header}" type="text" inputmode="numeric" value="${escapeHtml(formatNumber(rawValue))}" oninput="formatNumberWhileTyping(this)"></label>`;
                 }
                 if (header === 'slg') {
@@ -944,7 +1132,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             updateLineTotal();
             const headers = getStorageHeaders();
             const row = headers.map((_, idx) => document.getElementById(`formField_${idx}`)?.value.trim() || '');
-            ['don_gia', 'slg', 'thanh_tien', 'slg_ton', 'thuc_te', 'slg_lech'].forEach(field => {
+            ['don_gia', 'slg', 'thanh_tien', 'slg_ton', 'thuc_te', 'slg_lech', 'slg_nhat', 'tich_nhat', 'slg_đi', 'tich_slg_di'].forEach(field => {
                 const idx = headers.indexOf(field);
                 if (idx >= 0) row[idx] = String(parseNumber(row[idx]));
             });
@@ -981,7 +1169,18 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             initDragAndDrop();
             let saved = '';
             try { saved = sessionStorage.getItem(XNK_TT_TAB_STORAGE_KEY) || ''; } catch (_) { }
-            await switchTab(CONFIG.tabs[saved] ? saved : 'DS_SP');
+            currentTab = CONFIG.tabs[saved] ? saved : 'DS_SP';
+            try {
+                const savedUser = JSON.parse(sessionStorage.getItem('xnkTtCurrentUser') || 'null');
+                const savedAdmin = JSON.parse(sessionStorage.getItem('xnkTtAdminUser') || 'null');
+                if (savedAdmin && savedAdmin.id) adminSessionUser = savedAdmin;
+                if (savedUser && savedUser.id) {
+                    await setCurrentUser(savedUser);
+                    await switchTab(currentTab);
+                    return;
+                }
+            } catch (_) { }
+            document.getElementById('loading').style.display = 'none';
         }
 
         function initDragAndDrop() {
@@ -1010,6 +1209,118 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             if (!val || isNaN(val)) return val;
             return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
         }
+
+        function isCheckedValue(value) {
+            const raw = String(value || '').trim().toLowerCase();
+            return raw === 'true' || raw === '1' || raw === 'yes' || raw === 'x' || raw === 'checked';
+        }
+
+        function getRowValueByHeader(row, header) {
+            const idx = CONFIG.tabs.XUAT_KHO.headers.indexOf(header);
+            return idx >= 0 ? row[idx] || '' : '';
+        }
+
+        function getRowValueByHeaderDsSp(row, header) {
+            const idx = CONFIG.tabs.DS_SP.headers.indexOf(header);
+            return idx >= 0 ? row[idx] || '' : '';
+        }
+
+        function renderMobileDsSpCard(row, absoluteRowIndex) {
+            const ngay = getRowValueByHeaderDsSp(row, 'ngay');
+            const ncc = getRowValueByHeaderDsSp(row, 'ncc');
+            const idSp = getRowValueByHeaderDsSp(row, 'id_sp');
+            const tenSp = getRowValueByHeaderDsSp(row, 'ten_sp');
+            const dvt = getRowValueByHeaderDsSp(row, 'dvt');
+            const donGia = getRowValueByHeaderDsSp(row, 'don_gia');
+            const ghiChu = getRowValueByHeaderDsSp(row, 'ghi_chu');
+            const editButton = `<button type="button" onclick="openRecordForm(${absoluteRowIndex})">Sua</button>`;
+            
+            return `<td colspan="1"><article class="mobile-xuat-card">
+                <div class="mobile-xk-head">
+                    <div><span>NCC</span><strong>${escapeHtml(ncc || '-')}</strong></div>
+                    <div><span>ngay</span><strong>${escapeHtml(ngay || '-')}</strong></div>
+                    <div></div>
+                    ${editButton}
+                </div>
+                <div class="mobile-xk-product">
+                    <div>
+                        <strong>${escapeHtml(idSp || '-')}</strong>
+                        <span>${escapeHtml(tenSp || '')}</span>
+                    </div>
+                    <div class="mobile-xk-slg"><span>DVT</span><strong>${escapeHtml(dvt || '-')}</strong></div>
+                </div>
+                <div class="mobile-xk-meta">
+                    <div><span>Don gia</span><strong>${escapeHtml(formatCurrency(donGia) || '-')}</strong></div>
+                    <div class="mobile-xk-wide"><span>Ghi chu</span><strong>${escapeHtml(ghiChu || '-')}</strong></div>
+                </div>
+            </article></td>`;
+        }
+
+        function renderMobileXuatKhoCard(row, absoluteRowIndex) {
+            const editableKho = isKhoXuatKhoView();
+            const idDon = getRowValueByHeader(row, 'id_don');
+            const ngay = getRowValueByHeader(row, 'ngay');
+            const npp = getRowValueByHeader(row, 'npp');
+            const idSp = getRowValueByHeader(row, 'id_sp');
+            const tenSp = getRowValueByHeader(row, 'ten_sp');
+            const slg = getRowValueByHeader(row, 'slg');
+            const slgNhat = getRowValueByHeader(row, 'slg_nhat');
+            const tichNhat = getRowValueByHeader(row, 'tich_nhat');
+            const slgDi = getRowValueByHeader(row, 'slg_đi');
+            const tichSlgDi = getRowValueByHeader(row, 'tich_slg_di');
+            const tinhTrang = getRowValueByHeader(row, 'tinh_trang');
+            const trangThai = getRowValueByHeader(row, 'trang_thai');
+            const editButton = editableKho ? '' : `<button type="button" onclick="openRecordForm(${absoluteRowIndex})">Sua</button>`;
+            
+            let slgNhatHtml = '';
+            if (editableKho) {
+                slgNhatHtml = `
+                    <div class="mobile-xk-nhat-control">
+                        <div class="stepper">
+                            <button type="button" onclick="adjustInlineQuantity(${absoluteRowIndex}, 'slg_nhat', -1)">-</button>
+                            <input id="slg_nhat_${absoluteRowIndex}" class="mobile-xk-number" type="text" inputmode="numeric" value="${escapeHtml(formatNumber(slgNhat))}" onclick="event.stopPropagation()" oninput="formatNumberInput(this)" onchange="saveKhoInlineValue(${absoluteRowIndex}, 'slg_nhat', this.value)">
+                            <button type="button" onclick="adjustInlineQuantity(${absoluteRowIndex}, 'slg_nhat', 1)">+</button>
+                        </div>
+                        <div class="quick-adds">
+                            <button type="button" onclick="adjustInlineQuantity(${absoluteRowIndex}, 'slg_nhat', 4)">+4</button>
+                            <button type="button" onclick="adjustInlineQuantity(${absoluteRowIndex}, 'slg_nhat', 5)">+5</button>
+                            <button type="button" onclick="adjustInlineQuantity(${absoluteRowIndex}, 'slg_nhat', 6)">+6</button>
+                        </div>
+                    </div>`;
+            } else {
+                slgNhatHtml = `<strong>${escapeHtml(formatNumber(slgNhat) || '-')}</strong>`;
+            }
+
+            const isSlgMatch = (parseNumber(slg) > 0 && parseNumber(slg) === parseNumber(slgNhat));
+            const slgColorClass = isSlgMatch ? ' text-green' : '';
+
+            const tichNhatHtml = editableKho
+                ? `<input class="inline-checkbox" type="checkbox" ${isCheckedValue(tichNhat) ? 'checked' : ''} onclick="event.stopPropagation()" onchange="saveKhoInlineValue(${absoluteRowIndex}, 'tich_nhat', this.checked ? 'TRUE' : 'FALSE')">`
+                : `<strong>${isCheckedValue(tichNhat) ? 'Da tick' : '-'}</strong>`;
+            return `<td colspan="1"><article class="mobile-xuat-card">
+                <div class="mobile-xk-head">
+                    <div><span>id_don</span><strong>${escapeHtml(idDon || '-')}</strong></div>
+                    <div><span>NPP</span><strong>${escapeHtml(npp || '-')}</strong></div>
+                    <div><span>ngay</span><strong>${escapeHtml(ngay || '-')}</strong></div>
+                    ${editButton}
+                </div>
+                <div class="mobile-xk-product">
+                    <div>
+                        <strong>${escapeHtml(idSp || '-')}</strong>
+                        <span>${escapeHtml(tenSp || '')}</span>
+                    </div>
+                    <div id="slg_display_${absoluteRowIndex}" class="mobile-xk-slg${slgColorClass}"><span>SLG</span><strong>${escapeHtml(formatNumber(slg) || slg || '-')}</strong></div>
+                </div>
+                <div class="mobile-xk-meta">
+                    <div class="${editableKho ? 'mobile-xk-wide' : ''}"><span>SLG nhat</span>${slgNhatHtml}</div>
+                    <div><span>Tich nhat</span>${tichNhatHtml}</div>
+                    <div><span>SLG di</span><strong>${escapeHtml(formatNumber(slgDi) || slgDi || '-')}</strong></div>
+                    <div><span>Tich di</span><strong>${escapeHtml(tichSlgDi || '-')}</strong></div>
+                    <div class="mobile-xk-wide"><span>TT</span><strong>${escapeHtml(tinhTrang || '-')} / ${escapeHtml(trangThai || '-')}</strong></div>
+                </div>
+            </article></td>`;
+        }
+
         function renderTable() {
             const tbody = document.getElementById('tableBody');
             const tabConfig = CONFIG.tabs[currentTab];
@@ -1018,11 +1329,31 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             const end = start + rowsPerPage;
             const pageData = filteredData.slice(start, end);
 
+            if (isMobileXuatKhoView()) {
+                tbody.innerHTML = pageData.map((row, rowIndex) => `<tr>${renderMobileXuatKhoCard(row, start + rowIndex)}</tr>`).join('');
+                renderPagination();
+                return;
+            }
+
+            if (isMobileDsSpView()) {
+                tbody.innerHTML = pageData.map((row, rowIndex) => `<tr>${renderMobileDsSpCard(row, start + rowIndex)}</tr>`).join('');
+                renderPagination();
+                return;
+            }
+
             tbody.innerHTML = pageData.map((row, rowIndex) => {
-                const hiddenCols = tabConfig.hiddenCols || [];
+                const absoluteRowIndex = start + rowIndex;
+                const hiddenCols = getHiddenColsForCurrentView();
                 const cells = tabConfig.headers.map((_, idx) => {
                     const cell = row[idx] || '';
                     if (hiddenCols.includes(idx)) return '';
+                    const header = tabConfig.headers[idx];
+                    if (isKhoXuatKhoView() && header === 'slg_nhat') {
+                        return `<td><input class="inline-number-input" type="text" inputmode="numeric" value="${escapeHtml(formatNumber(cell))}" onclick="event.stopPropagation()" ondblclick="event.stopPropagation()" oninput="formatNumberInput(this)" onchange="saveKhoInlineValue(${absoluteRowIndex}, 'slg_nhat', this.value)"></td>`;
+                    }
+                    if (isKhoXuatKhoView() && header === 'tich_nhat') {
+                        return `<td class="inline-check-cell"><input class="inline-checkbox" type="checkbox" ${isCheckedValue(cell) ? 'checked' : ''} onclick="event.stopPropagation()" onchange="saveKhoInlineValue(${absoluteRowIndex}, 'tich_nhat', this.checked ? 'TRUE' : 'FALSE')"></td>`;
+                    }
                     if (idx === tabConfig.imgCol && cell) {
                         const firstImg = cell.split(',')[0].trim();
                         return `<td>
@@ -1044,7 +1375,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                     return `<td>${escapeHtml(cell || '')}</td>`;
                 }).join('');
 
-                const editAction = tabConfig.readOnly ? '' : ` ondblclick="openRecordForm(${start + rowIndex})"`;
+                const editAction = tabConfig.readOnly || isKhoXuatKhoView() ? '' : ` ondblclick="openRecordForm(${absoluteRowIndex})"`;
                 return `<tr${editAction}>${cells}</tr>`;
             }).join('');
 

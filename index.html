@@ -19,6 +19,23 @@
         <p>Đang tải dữ liệu...</p>
     </div>
 
+    <div id="loginScreen" class="login-screen">
+        <form class="login-card" onsubmit="handleLogin(event)">
+            <div class="login-logo">XNK<br>TT</div>
+            <h2>Dang nhap</h2>
+            <label>
+                <span>Ten dang nhap</span>
+                <input id="loginUser" type="text" autocomplete="username" required>
+            </label>
+            <label>
+                <span>Mat khau</span>
+                <input id="loginPassword" type="password" autocomplete="current-password" required>
+            </label>
+            <p id="loginError" class="login-error"></p>
+            <button type="submit" class="primary-btn login-submit">Dang nhap</button>
+        </form>
+    </div>
+
     <div id="dropOverlay">
         <div class="drop-message">
             <i data-lucide="upload-cloud" style="width: 48px; height: 48px;"></i>
@@ -54,7 +71,6 @@
                     <i data-lucide="panel-left-close" style="width:18px;"></i>
                 </button>
             </div>
-
             <div class="tabs">
                 <div class="tab active" data-tab="DS_SP" onclick="switchTab('DS_SP')">
                     <i data-lucide="package" style="width:18px;"></i>
@@ -79,6 +95,21 @@
                 <div class="tab" data-tab="KIEM_KHO" onclick="switchTab('KIEM_KHO')">
                     <i data-lucide="clipboard-list" style="width:18px;"></i>
                     <span>KIEM_KHO</span>
+                </div>
+            </div>
+
+            <div class="user-panel">
+                <label id="adminAccountSwitcher" class="admin-account-switcher">
+                    <span>Dang nhap nhanh</span>
+                    <select id="adminAccountSelect" onchange="adminSwitchAccount(this.value)">
+                        <option value="">Chon tai khoan</option>
+                    </select>
+                </label>
+                <div class="user-chip">
+                    <span id="currentUserLabel"></span>
+                    <button type="button" onclick="logout()" title="Dang xuat">
+                        <i data-lucide="log-out" style="width:16px;"></i>
+                    </button>
                 </div>
             </div>
         </aside>
