@@ -864,15 +864,18 @@ sR2Sh8e3h3Knd6j1tceRIFU=
         }
 
 
-        function renderProductOptions(query = '') {
+        function getProductMatches(query = '') {
             const term = String(query || '').toLowerCase().trim();
-            const matches = productCatalog
+            return productCatalog
                 .filter(product => {
                     if (!term) return true;
                     return product.id.toLowerCase().includes(term) || product.ten_sp.toLowerCase().includes(term);
                 })
                 .slice(0, PRODUCT_SUGGESTION_LIMIT);
-            return matches.map(product => {
+        }
+
+        function renderProductOptions(query = '') {
+            return getProductMatches(query).map(product => {
                 return `<option value="${escapeHtml(product.id)}" label="${escapeHtml(product.id)} - ${escapeHtml(product.ten_sp)}"></option>`;
             }).join('');
         }
@@ -880,8 +883,35 @@ sR2Sh8e3h3Knd6j1tceRIFU=
         function updateProductSuggestions() {
             const idSpInput = document.querySelector('[data-field="id_sp"]');
             const datalist = document.getElementById('productOptions');
-            if (!idSpInput || !datalist) return;
-            datalist.innerHTML = renderProductOptions(idSpInput.value);
+            const panel = document.getElementById('productSuggest');
+            if (!idSpInput) return;
+            const matches = getProductMatches(idSpInput.value);
+            if (datalist) datalist.innerHTML = renderProductOptions(idSpInput.value);
+            if (!panel) return;
+            if (!matches.length) {
+                panel.classList.remove('active');
+                panel.innerHTML = '';
+                return;
+            }
+            panel.innerHTML = matches.map(product => {
+                return `<button type="button" data-value="${escapeHtml(product.id)}" onclick="selectProductSuggestion(this.dataset.value)"><strong>${escapeHtml(product.id)}</strong><span>${escapeHtml(product.id)} - ${escapeHtml(product.ten_sp)}</span></button>`;
+            }).join('');
+            panel.classList.add('active');
+        }
+
+        function selectProductSuggestion(id) {
+            const input = document.querySelector('[data-field="id_sp"]');
+            const panel = document.getElementById('productSuggest');
+            if (input) input.value = id;
+            if (panel) panel.classList.remove('active');
+            updateProductName();
+        }
+
+        function hideProductSuggestions() {
+            window.setTimeout(() => {
+                const panel = document.getElementById('productSuggest');
+                if (panel) panel.classList.remove('active');
+            }, 150);
         }
 
         async function updateProductName(syncActual = true) {
@@ -1032,7 +1062,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                     const slgLechIdx = headers.indexOf('slg_lech');
                     const thucTeValue = getFormRowValue(row, 'thuc_te', thucTeIdx);
                     const slgLechValue = getFormRowValue(row, 'slg_lech', slgLechIdx);
-                    return `<div class="kiem-kho-count-row"><label><span>slg_ton</span><input id="formField_${idx}" data-field="${header}" type="text" inputmode="numeric" value="${escapeHtml(formatNumber(rawValue))}" readonly></label><label><span>thuc_te</span><div class="stepper"><button type="button" onclick="adjustQuantity(-1)">-</button><input id="formField_${thucTeIdx}" data-field="thuc_te" type="text" inputmode="numeric" value="${escapeHtml(formatNumber(thucTeValue || '0'))}" oninput="formatNumberWhileTyping(this)"><button type="button" onclick="adjustQuantity(1)">+</button></div></label><label><span>slg_lech</span><input id="formField_${slgLechIdx}" data-field="slg_lech" type="text" inputmode="numeric" value="${escapeHtml(formatNumber(slgLechValue))}" readonly></label></div>`;
+                    return `<div class="kiem-kho-count-row"><label><span>slg_ton</span><input id="formField_${idx}" data-field="${header}" type="text" inputmode="numeric" value="${escapeHtml(formatNumber(rawValue))}" readonly></label><label><span>thuc_te</span><div class="stepper"><button type="button" onclick="adjustQuantity(-1)">-</button><input id="formField_${thucTeIdx}" data-field="thuc_te" type="text" inputmode="numeric" value="${escapeHtml(formatNumber(thucTeValue || '0'))}" oninput="formatNumberWhileTyping(this)"><button type="button" onclick="adjustQuantity(1)">+</button></div><div class="kiem-kho-quick-adds">${[2, 3, 4, 5, 6, 10].map(amount => `<button type="button" onclick="adjustQuantity(${amount})">+${amount}</button>`).join('')}</div></label><label><span>slg_lech</span><input id="formField_${slgLechIdx}" data-field="slg_lech" type="text" inputmode="numeric" value="${escapeHtml(formatNumber(slgLechValue))}" readonly></label></div>`;
                 }
                 if (currentTab === 'KIEM_KHO' && (header === 'thuc_te' || header === 'slg_lech')) {
                     return '';
@@ -1053,6 +1083,9 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                     return `<label><span>${header}</span><input id="formField_${idx}" data-field="${header}" type="date" value="${escapeHtml(toDateInputValue(rawValue))}"></label>`;
                 }
                 if (header === 'id_sp') {
+                    if (currentTab === 'KIEM_KHO') {
+                        return `<label class="suggest-field product-suggest-field"><span>${header}</span><input id="formField_${idx}" data-field="${header}" type="text" value="${value}" autocomplete="off" oninput="updateProductName()" onfocus="updateProductSuggestions()" onblur="hideProductSuggestions()"><div id="productSuggest" class="suggest-panel product-suggest-panel"></div></label>`;
+                    }
                     return `<label><span>${header}</span><input id="formField_${idx}" data-field="${header}" type="text" value="${value}" list="productOptions" oninput="updateProductName()" onfocus="updateProductSuggestions()"><datalist id="productOptions">${renderProductOptions(String(rawValue || '').trim())}</datalist></label>`;
                 }
                 if (header === 'ncc' || header === 'npp') {
@@ -1093,6 +1126,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             const modal = document.getElementById('productModal');
             const title = document.getElementById('productModalTitle');
             const row = rowIndex === null ? null : filteredData[rowIndex];
+            modal.classList.toggle('wide-record-modal', currentTab === 'KIEM_KHO');
             try {
                 await loadProductCatalog();
             } catch (err) {

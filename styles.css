@@ -731,6 +731,24 @@
             display: flex;
         }
 
+        #productModal.wide-record-modal {
+            padding: 20px 20px 20px 240px;
+        }
+
+        #productModal.wide-record-modal .modal {
+            width: 100%;
+            max-width: none;
+        }
+
+        #productModal.wide-record-modal .form-fields {
+            max-height: none;
+            overflow: visible;
+        }
+
+        body.sidebar-collapsed #productModal.wide-record-modal {
+            padding-left: 92px;
+        }
+
         .modal {
             width: min(1040px, calc(100vw - 320px));
             background: #fff;
@@ -781,7 +799,53 @@
             display: grid;
             grid-template-columns: minmax(0, 1fr) minmax(170px, 1.35fr) minmax(0, 1fr);
             gap: 12px;
-            align-items: end;
+            align-items: start;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: #f8fafc;
+        }
+
+        .kiem-kho-count-row label {
+            align-content: start;
+        }
+
+        .kiem-kho-count-row input {
+            min-height: 38px;
+            background: #fff;
+        }
+
+        .kiem-kho-count-row .stepper {
+            min-height: 38px;
+        }
+
+        .kiem-kho-quick-adds {
+            display: grid;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 6px;
+            margin-top: 2px;
+        }
+
+        .kiem-kho-quick-adds button {
+            min-height: 28px;
+            border: 1px solid var(--border);
+            background: #fff;
+            border-radius: 6px;
+            color: var(--primary);
+            cursor: pointer;
+            font-weight: 800;
+        }
+
+        .kiem-kho-quick-adds button:hover {
+            border-color: var(--primary);
+            background: #eef2ff;
+        }
+
+        .kiem-kho-quick-adds button:focus,
+        .kiem-kho-count-row .stepper button:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
         }
 
         body.sidebar-collapsed .modal {
@@ -881,6 +945,10 @@
             color: #64748b;
             font-size: 0.8rem;
             font-weight: 500;
+        }
+
+        .product-suggest-panel {
+            max-height: min(56vh, 520px);
         }
 
         .vi-tri-buttons {
@@ -1208,6 +1276,15 @@
                 padding: 8px;
             }
 
+            #productModal.wide-record-modal {
+                padding: 8px;
+            }
+
+            #productModal.wide-record-modal .form-fields {
+                max-height: calc(100vh - 230px);
+                overflow-y: auto;
+            }
+
             .modal,
             body.sidebar-collapsed .modal {
                 width: 100%;
@@ -1223,7 +1300,8 @@
 
             .kiem-kho-count-row {
                 grid-template-columns: minmax(72px, 1fr) minmax(128px, 1.4fr) minmax(72px, 1fr);
-                gap: 8px;
+                gap: 6px;
+                padding: 8px;
             }
 
             .kiem-kho-count-row .stepper {
@@ -1234,6 +1312,16 @@
             .kiem-kho-count-row input {
                 padding-left: 8px;
                 padding-right: 8px;
+            }
+
+            .kiem-kho-quick-adds {
+                gap: 4px;
+            }
+
+            .kiem-kho-quick-adds button {
+                min-height: 30px;
+                padding: 0;
+                font-size: 0.72rem;
             }
 
             .modal-actions {
