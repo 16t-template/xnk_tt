@@ -138,3 +138,11 @@
 - `processFiles(files)`: xu ly upload file va goi upsert.
 - `toggleSidebar()`: thu gon/mo rong sidebar trai.
 - `reloadCurrentTab()`: tai lai du lieu module dang mo.
+# Cai app tren dien thoai
+
+Ung dung da ho tro PWA. Khi website duoc mo bang HTTPS, trinh duyet Android se hien nut cai app co bieu tuong tai xuong tren thanh tren cung. Bam nut nay de dua XNK TT ra man hinh chinh.
+
+- Android Chrome: mo website, bam nut tai xuong tren thanh app hoac chon `Add to Home screen`.
+- iPhone Safari: mo website, bam `Share`, sau do chon `Add to Home Screen`.
+- PWA can duoc chay bang HTTPS hoac localhost. Mo truc tiep file `index.html` se khong dang ky duoc service worker.
+- Du lieu Google Sheets luon lay tu mang. Service worker chi luu bo khung giao dien de app mo nhanh hon.

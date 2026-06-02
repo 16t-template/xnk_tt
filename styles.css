@@ -112,6 +112,10 @@
             display: none;
         }
 
+        .mobile-install-btn {
+            display: none;
+        }
+
         .app-shell {
             display: grid;
             grid-template-columns: 240px minmax(0, 1fr);
@@ -848,6 +852,63 @@
             box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
         }
 
+        .kiem-kho-history {
+            grid-column: 1 / -1;
+            display: grid;
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .kiem-kho-history-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            color: #334155;
+            font-size: 0.86rem;
+        }
+
+        .kiem-kho-history-title span {
+            color: #64748b;
+            font-size: 0.76rem;
+            font-weight: 600;
+        }
+
+        .kiem-kho-history-scroll {
+            max-height: 190px;
+            overflow: auto;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: #fff;
+        }
+
+        .kiem-kho-history table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.78rem;
+        }
+
+        .kiem-kho-history th,
+        .kiem-kho-history td {
+            padding: 8px 10px;
+            border-bottom: 1px solid var(--border);
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        .kiem-kho-history th {
+            position: sticky;
+            top: 0;
+            background: #f1f5f9;
+            color: #334155;
+            z-index: 1;
+        }
+
+        .kiem-kho-history-empty {
+            color: #64748b;
+            text-align: center !important;
+        }
+
         body.sidebar-collapsed .modal {
             width: min(1040px, calc(100vw - 152px));
         }
@@ -1030,8 +1091,13 @@
                 box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
             }
 
+            .mobile-appbar.install-available {
+                grid-template-columns: 44px minmax(0, 1fr) 44px 44px;
+            }
+
             .mobile-menu-btn,
-            .mobile-reload-btn {
+            .mobile-reload-btn,
+            .mobile-install-btn {
                 width: 44px;
                 height: 44px;
                 border: 1px solid var(--border);
@@ -1042,6 +1108,11 @@
                 align-items: center;
                 justify-content: center;
                 cursor: pointer;
+            }
+
+            .mobile-install-btn.available {
+                display: flex;
+                color: var(--primary);
             }
 
             .mobile-brand {
@@ -1326,6 +1397,10 @@
                 min-height: 30px;
                 padding: 0;
                 font-size: 0.72rem;
+            }
+
+            .kiem-kho-history-scroll {
+                max-height: 150px;
             }
 
             .modal-actions {

@@ -4,7 +4,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="XNK TT">
     <title>XNK TT - Danh sach san pham</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="icons/xnk-tt.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="icons/xnk-tt-192.png">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jsrsasign/10.5.25/jsrsasign-all-min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -56,6 +64,9 @@
         </div>
         <button class="mobile-reload-btn" type="button" onclick="reloadCurrentTab()" title="Load lai">
             <i data-lucide="refresh-cw" style="width:20px;"></i>
+        </button>
+        <button id="installAppBtn" class="mobile-install-btn" type="button" onclick="installMobileApp()" title="Cai app">
+            <i data-lucide="download" style="width:20px;"></i>
         </button>
     </div>
     <div class="mobile-nav-backdrop" onclick="closeMobileNav()"></div>

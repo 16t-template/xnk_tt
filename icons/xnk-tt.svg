@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#4f46e5"/>
+  <path d="M112 150h288v212H112z" fill="#fff" opacity=".16"/>
+  <path d="M148 192h216v128H148z" fill="#fff" opacity=".2"/>
+  <text x="256" y="242" fill="#fff" font-family="Arial, sans-serif" font-size="92" font-weight="700" text-anchor="middle">XNK</text>
+  <text x="256" y="332" fill="#fff" font-family="Arial, sans-serif" font-size="92" font-weight="700" text-anchor="middle">TT</text>
+</svg>

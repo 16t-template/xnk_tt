@@ -920,6 +920,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             const tenSpInput = document.querySelector('[data-field="ten_sp"]');
             if (!idSpInput) return;
             updateProductSuggestions();
+            updateKiemKhoHistory();
             if (tenSpInput) {
                 tenSpInput.value = getProductNameById(idSpInput.value);
             }
@@ -1052,6 +1053,60 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             return row[idx] || '';
         }
 
+        function getKiemKhoHistoryRows(query = '') {
+            const headers = CONFIG.tabs.KIEM_KHO.headers;
+            const idSpIdx = headers.indexOf('id_sp');
+            const term = String(query || '').trim().toLowerCase();
+            return allData
+                .filter(row => !term || String(row[idSpIdx] || '').toLowerCase().includes(term))
+                .slice(0, 30);
+        }
+
+        function renderKiemKhoHistoryBody(historyRows) {
+            const headers = CONFIG.tabs.KIEM_KHO.headers;
+            const index = header => headers.indexOf(header);
+            const body = historyRows.length
+                ? historyRows.map(row => `
+                    <tr>
+                        <td>${escapeHtml(row[index('ngay')] || '')}</td>
+                        <td>${escapeHtml(row[index('id_sp')] || '')}</td>
+                        <td>${escapeHtml(formatNumber(row[index('slg_ton')]))}</td>
+                        <td>${escapeHtml(formatNumber(row[index('thuc_te')]))}</td>
+                        <td>${escapeHtml(formatNumber(row[index('slg_lech')]))}</td>
+                        <td>${escapeHtml(row[index('vi_tri')] || '')}</td>
+                    </tr>`).join('')
+                : '<tr><td colspan="6" class="kiem-kho-history-empty">Chua co san pham da kiem.</td></tr>';
+            return body;
+        }
+
+        function updateKiemKhoHistory() {
+            if (currentTab !== 'KIEM_KHO') return;
+            const idSpInput = document.querySelector('[data-field="id_sp"]');
+            const historyRows = getKiemKhoHistoryRows(idSpInput?.value);
+            const body = document.getElementById('kiemKhoHistoryBody');
+            const count = document.getElementById('kiemKhoHistoryCount');
+            if (body) body.innerHTML = renderKiemKhoHistoryBody(historyRows);
+            if (count) count.innerText = `${historyRows.length} dong`;
+        }
+
+        function renderKiemKhoHistory() {
+            if (currentTab !== 'KIEM_KHO') return '';
+            const historyRows = getKiemKhoHistoryRows();
+            return `
+                <section class="kiem-kho-history">
+                    <div class="kiem-kho-history-title">
+                        <strong>San pham da kiem truoc do</strong>
+                        <span id="kiemKhoHistoryCount">${historyRows.length} dong</span>
+                    </div>
+                    <div class="kiem-kho-history-scroll">
+                        <table>
+                            <thead><tr><th>ngay</th><th>id_sp</th><th>slg_ton</th><th>thuc_te</th><th>slg_lech</th><th>vi_tri</th></tr></thead>
+                            <tbody id="kiemKhoHistoryBody">${renderKiemKhoHistoryBody(historyRows)}</tbody>
+                        </table>
+                    </div>
+                </section>`;
+        }
+
         function renderFormFields(row = null) {
             const container = document.getElementById('formFields');
             const headers = getStorageHeaders();
@@ -1118,7 +1173,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                     return `<label><span>${header}</span><textarea id="formField_${idx}" data-field="${header}" rows="4">${value}</textarea></label>`;
                 }
                 return `<label><span>${header}</span><input id="formField_${idx}" data-field="${header}" type="text" value="${value}"${list}></label>`;
-            }).join('');
+            }).join('') + renderKiemKhoHistory();
             updateProductName(!row);
             updateLineTotal();
         }
@@ -1582,4 +1637,39 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             }
         }
 
+        let deferredInstallPrompt = null;
+
+        function setInstallButtonAvailable(isAvailable) {
+            const appbar = document.querySelector('.mobile-appbar');
+            const installBtn = document.getElementById('installAppBtn');
+            if (appbar) appbar.classList.toggle('install-available', isAvailable);
+            if (installBtn) installBtn.classList.toggle('available', isAvailable);
+        }
+
+        async function installMobileApp() {
+            if (!deferredInstallPrompt) return;
+            deferredInstallPrompt.prompt();
+            await deferredInstallPrompt.userChoice;
+            deferredInstallPrompt = null;
+            setInstallButtonAvailable(false);
+        }
+
+        function initializeMobileApp() {
+            window.addEventListener('beforeinstallprompt', event => {
+                event.preventDefault();
+                deferredInstallPrompt = event;
+                setInstallButtonAvailable(true);
+            });
+            window.addEventListener('appinstalled', () => {
+                deferredInstallPrompt = null;
+                setInstallButtonAvailable(false);
+            });
+            if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
+                navigator.serviceWorker.register('./sw.js').catch(error => {
+                    console.warn('Khong the dang ky service worker:', error);
+                });
+            }
+        }
+
+        initializeMobileApp();
         init();
