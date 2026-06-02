@@ -164,7 +164,8 @@ Ung dung da ho tro PWA. Khi website duoc mo bang HTTPS, trinh duyet Android se h
 - Neu mat mang, app giu hang doi va tu dong dong bo khi dien thoai co mang lai.
 - Truoc khi append, app doc lai sheet va bo qua `id` da ton tai de han che trung dong khi mang chap chon.
 - Nen mo module `KIEM_KHO` it nhat mot lan khi co mang de app luu cache DS_SP, TON_KHO va lich su kiem kho tren dien thoai.
-- Dien thoai co the xoay ngang. App tu render lai giao dien mobile sau khi doi huong man hinh.
+- PWA khoa huong man hinh `portrait-primary` de giu giao dien dien thoai theo chieu doc.
+- Khi chay trong trinh duyet web thong thuong, he dieu hanh co the khong cho website khoa xoay. Ban cai tren man hinh chinh ap dung on dinh hon.
 
 # QR san pham
 

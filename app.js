@@ -1974,6 +1974,9 @@ sR2Sh8e3h3Knd6j1tceRIFU=
         }
 
         function initializeMobileApp() {
+            if (screen.orientation?.lock) {
+                screen.orientation.lock('portrait-primary').catch(() => { });
+            }
             window.addEventListener('online', syncPendingKiemKho);
             window.addEventListener('resize', () => {
                 window.clearTimeout(initializeMobileApp.resizeTimer);
@@ -1999,7 +2002,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                     isReloadingForUpdate = true;
                     window.location.reload();
                 });
-                navigator.serviceWorker.register('./sw.js?v=9', { updateViaCache: 'none' })
+                navigator.serviceWorker.register('./sw.js?v=10', { updateViaCache: 'none' })
                     .then(registration => registration.update())
                     .catch(error => {
                         console.warn('Khong the dang ky service worker:', error);
