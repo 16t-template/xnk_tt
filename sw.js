@@ -1,10 +1,10 @@
-const CACHE_NAME = 'xnk-tt-shell-v7';
+const CACHE_NAME = 'xnk-tt-shell-v8';
 const APP_SHELL = [
   './',
   './index.html',
-  './styles.css',
-  './app.js',
-  './manifest.webmanifest',
+  './styles.css?v=8',
+  './app.js?v=8',
+  './manifest.webmanifest?v=8',
   './icons/xnk-tt.svg',
   './icons/xnk-tt-192.png',
   './icons/xnk-tt-512.png'
@@ -31,7 +31,7 @@ self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET' || requestUrl.origin !== self.location.origin) return;
 
   event.respondWith(
-    fetch(event.request)
+    fetch(event.request, { cache: 'no-store' })
       .then(response => {
         const copy = response.clone();
         caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));

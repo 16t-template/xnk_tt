@@ -32,8 +32,8 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             tokenUrl: "https://oauth2.googleapis.com/token",
             tabs: {
                 'DS_SP': {
-                    range: 'DS_SP!A2:D',
-                    headers: ['id', 'ten_sp', 'ncc', 'ghi_chu'],
+                    range: 'DS_SP!A2:E',
+                    headers: ['id', 'ten_sp', 'ncc', 'ghi_chu', 'qr'],
                     priceCols: [],
                     imgCol: -1
                 },
@@ -119,6 +119,10 @@ sR2Sh8e3h3Knd6j1tceRIFU=
         const KIEM_KHO_HISTORY_CACHE_KEY = 'xnkTtKiemKhoHistory';
         const KIEM_KHO_PENDING_KEY = 'xnkTtKiemKhoPending';
         let isSyncingKiemKho = false;
+        let qrScannerStream = null;
+        let qrScannerFrame = 0;
+        let qrScannerTarget = 'KIEM_KHO';
+        let returnToKiemKhoIdSp = '';
 
         function readLocalJson(key, fallback) {
             try {
@@ -302,6 +306,12 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                     arr._sheetRow = i + 2;
                     return arr;
                 });
+                if (currentTab === 'DS_SP') {
+                    productCatalog = allData
+                        .map(row => ({ id: String(row[0] || '').trim(), ten_sp: String(row[1] || '').trim(), qr: String(row[4] || '').trim() }))
+                        .filter(item => item.id);
+                    writeLocalJson(KIEM_KHO_PRODUCT_CACHE_KEY, productCatalog);
+                }
                 if (currentTab === 'TON_KHO') {
                     allData = await buildInventoryDisplayRows(allData, token);
                 }
@@ -353,12 +363,16 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             return currentTab === 'XUAT_KHO' && getCurrentUserRole() === 'KHO';
         }
 
+        function isMobileLayout() {
+            return window.matchMedia && window.matchMedia('(max-width: 768px), (max-width: 960px) and (orientation: landscape)').matches;
+        }
+
         function isMobileXuatKhoView() {
-            return currentTab === 'XUAT_KHO' && window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
+            return currentTab === 'XUAT_KHO' && isMobileLayout();
         }
 
         function isMobileDsSpView() {
-            return currentTab === 'DS_SP' && window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
+            return currentTab === 'DS_SP' && isMobileLayout();
         }
 
         function getHiddenColsForCurrentView() {
@@ -630,18 +644,19 @@ sR2Sh8e3h3Knd6j1tceRIFU=
 
         async function loadProductCatalog() {
             if (currentTab === 'DS_SP') {
-                productCatalog = allData.map(row => ({ id: String(row[0] || '').trim(), ten_sp: String(row[1] || '').trim() })).filter(item => item.id);
+                productCatalog = allData.map(row => ({ id: String(row[0] || '').trim(), ten_sp: String(row[1] || '').trim(), qr: String(row[4] || '').trim() })).filter(item => item.id);
+                writeLocalJson(KIEM_KHO_PRODUCT_CACHE_KEY, productCatalog);
                 return productCatalog;
             }
 
             const token = await getAccessToken();
-            const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.spreadsheetId}/values/DS_SP!A2:D`, {
+            const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.spreadsheetId}/values/DS_SP!A2:E`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (!res.ok) throw new Error('Khong tai duoc danh sach san pham DS_SP.');
             const data = await res.json();
             productCatalog = (data.values || [])
-                .map(row => ({ id: String(row[0] || '').trim(), ten_sp: String(row[1] || '').trim() }))
+                .map(row => ({ id: String(row[0] || '').trim(), ten_sp: String(row[1] || '').trim(), qr: String(row[4] || '').trim() }))
                 .filter(item => item.id);
             writeLocalJson(KIEM_KHO_PRODUCT_CACHE_KEY, productCatalog);
             return productCatalog;
@@ -762,14 +777,16 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             return map;
         }
 
-        async function writeRecordRow(row, sheetRow) {
+        async function writeRecordRow(row, sheetRow, tabName = currentTab) {
             const token = await getAccessToken();
-            const cleanRow = normalizeRow(row);
+            const cleanRow = tabName === currentTab
+                ? normalizeRow(row)
+                : getStorageHeaders(tabName).map((_, idx) => String(row[idx] ?? '').trim());
             const rowNum = Number(sheetRow);
             if (!rowNum || rowNum < 2) throw new Error('Khong xac dinh duoc dong can cap nhat.');
-            const endCol = colName(getStorageHeaders().length - 1);
+            const endCol = colName(getStorageHeaders(tabName).length - 1);
 
-            const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.spreadsheetId}/values/${currentTab}!A${rowNum}:${endCol}${rowNum}?valueInputOption=RAW`, {
+            const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.spreadsheetId}/values/${tabName}!A${rowNum}:${endCol}${rowNum}?valueInputOption=RAW`, {
                 method: 'PUT',
                 headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({ values: [cleanRow] })
@@ -1001,6 +1018,107 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             updateProductName(true, false);
         }
 
+        function applyKiemKhoQr(rawValue) {
+            const value = String(rawValue || '').trim();
+            if (!value) return false;
+            const product = productCatalog.find(item => String(item.qr || '').trim() === value);
+            if (!product) return false;
+            const idSpInput = document.querySelector('[data-field="id_sp"]');
+            const qrInput = document.getElementById('kiemKhoQrInput');
+            if (idSpInput) idSpInput.value = product.id;
+            if (qrInput) qrInput.value = value;
+            updateProductName(true, false);
+            return true;
+        }
+
+        function handleKiemKhoQrInput(input) {
+            if (!applyKiemKhoQr(input?.value)) return;
+            input.blur();
+            showKiemKhoNotice('Da nhan QR va dien id_sp.');
+        }
+
+        async function openDsSpProductFromKiemKho() {
+            const idSp = document.querySelector('[data-field="id_sp"]')?.value.trim() || '';
+            if (!idSp) {
+                showKiemKhoNotice('Hay chon id_sp truoc.');
+                return;
+            }
+            returnToKiemKhoIdSp = idSp;
+            closeProductForm();
+            await switchTab('DS_SP');
+            const rowIndex = filteredData.findIndex(row => String(row[0] || '').trim() === idSp);
+            if (rowIndex < 0) {
+                showKiemKhoNotice('Khong tim thay id_sp trong DS_SP.');
+                return;
+            }
+            openRecordForm(rowIndex);
+        }
+
+        function applyScannedQr(value) {
+            if (qrScannerTarget === 'DS_SP') {
+                const input = document.querySelector('[data-field="qr"]');
+                if (!input) return false;
+                input.value = String(value || '').trim();
+                return !!input.value;
+            }
+            return applyKiemKhoQr(value);
+        }
+
+        async function startQrScanner(target = 'KIEM_KHO') {
+            qrScannerTarget = target;
+            const modal = document.getElementById('qrScannerModal');
+            const video = document.getElementById('qrScannerVideo');
+            const status = document.getElementById('qrScannerStatus');
+            if (!modal || !video || !status) return;
+            if (!('BarcodeDetector' in window)) {
+                showKiemKhoNotice('Trinh duyet chua ho tro camera QR. Hay dung o QR.');
+                document.querySelector(qrScannerTarget === 'DS_SP' ? '[data-field="qr"]' : '#kiemKhoQrInput')?.focus();
+                return;
+            }
+            if (!navigator.mediaDevices?.getUserMedia) {
+                showKiemKhoNotice('Khong mo duoc camera tren trinh duyet nay.');
+                return;
+            }
+            try {
+                qrScannerStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+                video.srcObject = qrScannerStream;
+                await video.play();
+                modal.classList.add('active');
+                status.innerText = 'Dua ma QR vao khung camera.';
+                const detector = new BarcodeDetector({ formats: ['qr_code'] });
+                const scan = async () => {
+                    if (!qrScannerStream) return;
+                    try {
+                        const codes = await detector.detect(video);
+                        const value = codes[0]?.rawValue || '';
+                        if (value) {
+                            if (applyScannedQr(value)) {
+                                stopQrScanner();
+                                showKiemKhoNotice(qrScannerTarget === 'DS_SP' ? 'Da quet va dien QR.' : 'Da quet QR va dien id_sp.');
+                                return;
+                            }
+                            status.innerText = 'QR chua co trong DS_SP.';
+                        }
+                    } catch (_) { }
+                    qrScannerFrame = window.requestAnimationFrame(scan);
+                };
+                qrScannerFrame = window.requestAnimationFrame(scan);
+            } catch (err) {
+                console.warn('Khong mo duoc camera QR:', err);
+                showKiemKhoNotice('Khong mo duoc camera. Hay kiem tra quyen camera.');
+            }
+        }
+
+        function stopQrScanner() {
+            if (qrScannerFrame) window.cancelAnimationFrame(qrScannerFrame);
+            qrScannerFrame = 0;
+            if (qrScannerStream) qrScannerStream.getTracks().forEach(track => track.stop());
+            qrScannerStream = null;
+            const video = document.getElementById('qrScannerVideo');
+            if (video) video.srcObject = null;
+            document.getElementById('qrScannerModal')?.classList.remove('active');
+        }
+
         function hideProductSuggestions() {
             window.setTimeout(() => {
                 const panel = document.getElementById('productSuggest');
@@ -1226,12 +1344,15 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                 if (currentTab === 'DS_SP' && header === 'ncc') {
                     return `<label><span>${header}</span><input id="formField_${idx}" data-field="${header}" type="text" value="${value}"${list}></label>`;
                 }
+                if (currentTab === 'DS_SP' && header === 'qr') {
+                    return `<label><span>${header}</span><div class="kiem-kho-qr-row"><input id="formField_${idx}" data-field="${header}" type="text" value="${value}" autocomplete="off" placeholder="Quet hoac nhap QR"><button type="button" class="kiem-kho-tool-btn" onclick="startQrScanner('DS_SP')" title="Mo camera quet QR"><i data-lucide="scan-line" style="width:18px;"></i></button></div></label>`;
+                }
                 if (header === 'ngay') {
                     return `<label><span>${header}</span><input id="formField_${idx}" data-field="${header}" type="date" value="${escapeHtml(toDateInputValue(rawValue))}"></label>`;
                 }
                 if (header === 'id_sp') {
                     if (currentTab === 'KIEM_KHO') {
-                        return `<label class="suggest-field product-suggest-field"><span>${header}</span><input id="formField_${idx}" data-field="${header}" type="text" value="${value}" autocomplete="off" oninput="updateProductName()" onfocus="updateProductSuggestions()" onblur="hideProductSuggestions()"><div id="productSuggest" class="suggest-panel product-suggest-panel"></div></label>`;
+                        return `<div class="kiem-kho-product-tools"><label class="suggest-field product-suggest-field"><span>${header}</span><div class="kiem-kho-id-sp-row"><input id="formField_${idx}" data-field="${header}" type="text" value="${value}" autocomplete="off" oninput="updateProductName()" onfocus="updateProductSuggestions()" onblur="hideProductSuggestions()"><button type="button" class="kiem-kho-tool-btn" onclick="openDsSpProductFromKiemKho()" title="Sua san pham trong DS_SP"><i data-lucide="square-pen" style="width:18px;"></i></button></div><div id="productSuggest" class="suggest-panel product-suggest-panel"></div></label><label class="kiem-kho-qr-field"><span>qr</span><div class="kiem-kho-qr-row"><input id="kiemKhoQrInput" type="text" autocomplete="off" placeholder="Quet hoac nhap QR" oninput="handleKiemKhoQrInput(this)"><button type="button" class="kiem-kho-tool-btn" onclick="startQrScanner()" title="Mo camera quet QR"><i data-lucide="scan-line" style="width:18px;"></i></button></div></label></div>`;
                     }
                     return `<label><span>${header}</span><input id="formField_${idx}" data-field="${header}" type="text" value="${value}" list="productOptions" oninput="updateProductName()" onfocus="updateProductSuggestions()"><datalist id="productOptions">${renderProductOptions(String(rawValue || '').trim())}</datalist></label>`;
                 }
@@ -1283,11 +1404,19 @@ sR2Sh8e3h3Knd6j1tceRIFU=
         function queueKiemKhoRecord(row) {
             const pending = getPendingKiemKhoRows();
             const id = getRowId(row);
-            if (!pending.some(item => getRowId(item.row) === id)) {
+            const pendingIndex = pending.findIndex(item => getRowId(item.row) === id);
+            if (pendingIndex >= 0) {
+                pending[pendingIndex] = { row: Array.from(row), createdAt: pending[pendingIndex].createdAt };
+            } else {
                 pending.push({ row: Array.from(row), createdAt: Date.now() });
-                setPendingKiemKhoRows(pending);
             }
-            if (!allData.some(item => getRowId(item) === id)) {
+            setPendingKiemKhoRows(pending);
+            const existingIndex = allData.findIndex(item => getRowId(item) === id);
+            if (existingIndex >= 0) {
+                const sheetRow = allData[existingIndex]._sheetRow;
+                allData[existingIndex] = row;
+                if (sheetRow) allData[existingIndex]._sheetRow = sheetRow;
+            } else {
                 allData.unshift(row);
             }
             filteredData = [...allData];
@@ -1303,8 +1432,16 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             try {
                 const token = await getAccessToken();
                 const sheetRows = await fetchSheetRows(CONFIG.tabs.KIEM_KHO.range, token);
-                const existingIds = new Set(sheetRows.map(getRowId));
-                const rowsToAppend = pending.map(item => item.row).filter(row => !existingIds.has(getRowId(row)));
+                const sheetRowById = new Map(sheetRows.map((row, idx) => [getRowId(row), idx + 2]).filter(([id]) => id));
+                const rowsToAppend = [];
+                for (const item of pending) {
+                    const sheetRow = sheetRowById.get(getRowId(item.row));
+                    if (sheetRow) {
+                        await writeRecordRow(item.row, sheetRow, 'KIEM_KHO');
+                    } else {
+                        rowsToAppend.push(item.row);
+                    }
+                }
                 await appendRowsToSheet('KIEM_KHO', rowsToAppend);
                 setPendingKiemKhoRows([]);
                 showKiemKhoNotice('Da dong bo kiem kho len Sheet.');
@@ -1324,6 +1461,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             const title = document.getElementById('productModalTitle');
             const row = rowIndex === null ? null : filteredData[rowIndex];
             modal.classList.toggle('wide-record-modal', currentTab === 'KIEM_KHO');
+            updateReturnToKiemKhoButton();
             if (currentTab === 'KIEM_KHO') {
                 hydrateKiemKhoCaches();
                 document.getElementById('editingSheetRow').value = row ? getDataSheetRow(row) : '';
@@ -1358,7 +1496,31 @@ sR2Sh8e3h3Knd6j1tceRIFU=
         }
 
         function closeProductForm() {
+            stopQrScanner();
             document.getElementById('productModal').classList.remove('active');
+            if (currentTab === 'DS_SP') {
+                returnToKiemKhoIdSp = '';
+                updateReturnToKiemKhoButton();
+            }
+        }
+
+        function updateReturnToKiemKhoButton() {
+            const button = document.getElementById('returnToKiemKhoBtn');
+            if (!button) return;
+            button.style.display = currentTab === 'DS_SP' && returnToKiemKhoIdSp ? 'flex' : 'none';
+        }
+
+        async function returnToKiemKhoForm() {
+            const idSp = returnToKiemKhoIdSp;
+            returnToKiemKhoIdSp = '';
+            closeProductForm();
+            await switchTab('KIEM_KHO');
+            await openRecordForm();
+            const input = document.querySelector('[data-field="id_sp"]');
+            if (input) {
+                input.value = idSp;
+                updateProductName(true, false);
+            }
         }
 
         async function saveRecordFromForm(event) {
@@ -1375,7 +1537,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             }
 
             const editingSheetRow = Number(document.getElementById('editingSheetRow').value);
-            if (currentTab === 'KIEM_KHO' && !editingSheetRow) {
+            if (currentTab === 'KIEM_KHO') {
                 queueKiemKhoRecord(row);
                 closeProductForm();
                 showKiemKhoNotice(navigator.onLine ? 'Da luu. Dang dong bo nen...' : 'Da luu tren may. Se dong bo khi co mang.');
@@ -1808,6 +1970,14 @@ sR2Sh8e3h3Knd6j1tceRIFU=
 
         function initializeMobileApp() {
             window.addEventListener('online', syncPendingKiemKho);
+            window.addEventListener('resize', () => {
+                window.clearTimeout(initializeMobileApp.resizeTimer);
+                initializeMobileApp.resizeTimer = window.setTimeout(() => {
+                    if (!document.body.classList.contains('is-authenticated')) return;
+                    renderHeaders();
+                    renderTable();
+                }, 120);
+            });
             window.addEventListener('beforeinstallprompt', event => {
                 event.preventDefault();
                 deferredInstallPrompt = event;
@@ -1818,9 +1988,17 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                 setInstallButtonAvailable(false);
             });
             if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
-                navigator.serviceWorker.register('./sw.js').catch(error => {
-                    console.warn('Khong the dang ky service worker:', error);
+                let isReloadingForUpdate = false;
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    if (isReloadingForUpdate) return;
+                    isReloadingForUpdate = true;
+                    window.location.reload();
                 });
+                navigator.serviceWorker.register('./sw.js?v=8', { updateViaCache: 'none' })
+                    .then(registration => registration.update())
+                    .catch(error => {
+                        console.warn('Khong the dang ky service worker:', error);
+                    });
             }
             window.setTimeout(syncPendingKiemKho, 0);
         }

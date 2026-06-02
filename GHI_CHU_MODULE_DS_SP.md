@@ -147,11 +147,31 @@ Ung dung da ho tro PWA. Khi website duoc mo bang HTTPS, trinh duyet Android se h
 - PWA can duoc chay bang HTTPS hoac localhost. Mo truc tiep file `index.html` se khong dang ky duoc service worker.
 - Du lieu Google Sheets luon lay tu mang. Service worker chi luu bo khung giao dien de app mo nhanh hon.
 
+# Cap nhat giao dien tren GitHub Pages
+
+- Sau khi sua code, push cac file len nhanh GitHub Pages dang deploy.
+- Moi ban giao dien can tang version `v=` trong `index.html`, URL dang ky `sw.js?v=` trong `app.js`, va `CACHE_NAME` cung danh sach file trong `sw.js`.
+- App tu kiem tra service worker moi khi mo, kich hoat ban moi va reload mot lan.
+- Service worker lay file giao dien theo network-first voi `cache: no-store`.
+- GitHub Pages van co the can mot khoang ngan de deploy. Kiem tra tab `Actions` hoac `Deployments` tren GitHub neu web chua thay doi.
+
 # KIEM_KHO offline
 
 - Bam `Them moi` se mo form ngay bang cache cuc bo, khong cho tai lai DS_SP va TON_KHO.
 - Khi luu dong KIEM_KHO moi, dong duoc luu vao bo nho tren may va hien ngay tren bang.
+- Khi sua dong KIEM_KHO da co, thay doi cung duoc luu tren may ngay va dong bo sau.
 - Neu co mang, app dong bo ngam len sheet `KIEM_KHO`.
 - Neu mat mang, app giu hang doi va tu dong dong bo khi dien thoai co mang lai.
 - Truoc khi append, app doc lai sheet va bo qua `id` da ton tai de han che trung dong khi mang chap chon.
 - Nen mo module `KIEM_KHO` it nhat mot lan khi co mang de app luu cache DS_SP, TON_KHO va lich su kiem kho tren dien thoai.
+- Dien thoai co the xoay ngang. App tu render lai giao dien mobile sau khi doi huong man hinh.
+
+# QR san pham
+
+- Sheet `DS_SP` co thu tu cot: `id`, `ten_sp`, `ncc`, `ghi_chu`, `qr`.
+- Form `KIEM_KHO` co o QR ao. QR khong ghi them vao sheet `KIEM_KHO`; app dung QR de tra `DS_SP.qr` va dien `id_sp`.
+- Co the dung may quet cam tay de nhap vao o QR, hoac bam nut camera ben canh o QR tren dien thoai.
+- Nut sua ben canh `id_sp` mo module `DS_SP` va mo dung san pham dang chon.
+- Form sua `DS_SP` co nut camera ben canh o `qr` de quet va dien ma QR.
+- Neu mo DS_SP tu form KIEM_KHO, footer form DS_SP co nut `Ve KIEM_KHO` de quay lai form kiem kho va tu dien lai `id_sp`.
+- Camera QR can HTTPS va quyen truy cap camera. Neu trinh duyet khong ho tro camera QR, van dung duoc o QR voi may quet cam tay.
