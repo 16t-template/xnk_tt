@@ -936,7 +936,6 @@ sR2Sh8e3h3Knd6j1tceRIFU=
 
         function renderDatalistOptions(values) {
             return [...new Set(values.filter(Boolean).map(value => String(value).trim()))]
-                .sort()
                 .map(value => `<option value="${escapeHtml(value)}"></option>`)
                 .join('');
         }
@@ -944,7 +943,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
         function getPreviousValues(header) {
             const idx = getStorageHeaders().indexOf(header);
             if (idx < 0) return [];
-            return [...new Set(allData.map(row => String(row[idx] || '').trim()).filter(Boolean))].sort();
+            return [...new Set(allData.map(row => String(row[idx] || '').trim()).filter(Boolean))];
         }
 
         function renderViTriButtons() {
@@ -975,7 +974,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             }).join('');
         }
 
-        function updateProductSuggestions() {
+        function updateProductSuggestions(showPanel = true) {
             const idSpInput = document.querySelector('[data-field="id_sp"]');
             const datalist = document.getElementById('productOptions');
             const panel = document.getElementById('productSuggest');
@@ -991,7 +990,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             panel.innerHTML = matches.map(product => {
                 return `<button type="button" data-value="${escapeHtml(product.id)}" onclick="selectProductSuggestion(this.dataset.value)"><strong>${escapeHtml(product.id)}</strong><span>${escapeHtml(product.id)} - ${escapeHtml(product.ten_sp)}</span></button>`;
             }).join('');
-            panel.classList.add('active');
+            panel.classList.toggle('active', showPanel);
         }
 
         function selectProductSuggestion(id) {
@@ -999,7 +998,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             const panel = document.getElementById('productSuggest');
             if (input) input.value = id;
             if (panel) panel.classList.remove('active');
-            updateProductName();
+            updateProductName(true, false);
         }
 
         function hideProductSuggestions() {
@@ -1009,11 +1008,11 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             }, 150);
         }
 
-        async function updateProductName(syncActual = true) {
+        async function updateProductName(syncActual = true, showSuggestions = true) {
             const idSpInput = document.querySelector('[data-field="id_sp"]');
             const tenSpInput = document.querySelector('[data-field="ten_sp"]');
             if (!idSpInput) return;
-            updateProductSuggestions();
+            updateProductSuggestions(showSuggestions);
             updateKiemKhoHistory();
             if (tenSpInput) {
                 tenSpInput.value = getProductNameById(idSpInput.value);
@@ -1266,7 +1265,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                 }
                 return `<label><span>${header}</span><input id="formField_${idx}" data-field="${header}" type="text" value="${value}"${list}></label>`;
             }).join('') + renderKiemKhoHistory();
-            updateProductName(!row);
+            updateProductName(!row, false);
             updateLineTotal();
         }
 
@@ -1276,8 +1275,8 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                 loadInventoryStockMap()
             ]);
             if (document.getElementById('productModal')?.classList.contains('active')) {
-                updateProductSuggestions();
-                updateProductName(false);
+                updateProductSuggestions(false);
+                updateProductName(false, false);
             }
         }
 
@@ -1331,7 +1330,6 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                 renderFormFields(row);
                 title.innerText = row ? `Sua ${currentTab}` : `Them moi ${currentTab}`;
                 modal.classList.add('active');
-                document.querySelector('[data-field="id_sp"]')?.focus();
                 lucide.createIcons();
                 refreshKiemKhoCaches();
                 syncPendingKiemKho();

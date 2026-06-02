@@ -1,4 +1,4 @@
-const CACHE_NAME = 'xnk-tt-shell-v2';
+const CACHE_NAME = 'xnk-tt-shell-v4';
 const APP_SHELL = [
   './',
   './index.html',
