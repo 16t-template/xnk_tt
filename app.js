@@ -114,6 +114,76 @@ sR2Sh8e3h3Knd6j1tceRIFU=
         const CUSTOMER_SUGGESTION_LIMIT = 50;
         const WAREHOUSE_PAGE_SIZE = 200;
         const DEFAULT_PAGE_SIZE = 150;
+        const KIEM_KHO_PRODUCT_CACHE_KEY = 'xnkTtKiemKhoProducts';
+        const KIEM_KHO_STOCK_CACHE_KEY = 'xnkTtKiemKhoStock';
+        const KIEM_KHO_HISTORY_CACHE_KEY = 'xnkTtKiemKhoHistory';
+        const KIEM_KHO_PENDING_KEY = 'xnkTtKiemKhoPending';
+        let isSyncingKiemKho = false;
+
+        function readLocalJson(key, fallback) {
+            try {
+                const value = JSON.parse(localStorage.getItem(key) || 'null');
+                return value ?? fallback;
+            } catch (_) {
+                return fallback;
+            }
+        }
+
+        function writeLocalJson(key, value) {
+            try { localStorage.setItem(key, JSON.stringify(value)); } catch (_) { }
+        }
+
+        function getPendingKiemKhoRows() {
+            const rows = readLocalJson(KIEM_KHO_PENDING_KEY, []);
+            return Array.isArray(rows) ? rows : [];
+        }
+
+        function setPendingKiemKhoRows(rows) {
+            writeLocalJson(KIEM_KHO_PENDING_KEY, rows);
+        }
+
+        function cacheKiemKhoHistory(rows = allData) {
+            writeLocalJson(KIEM_KHO_HISTORY_CACHE_KEY, rows.map(row => Array.from(row)));
+        }
+
+        function mergePendingKiemKhoRows(rows) {
+            const pending = getPendingKiemKhoRows();
+            const knownIds = new Set(rows.map(getRowId));
+            const pendingRows = pending.map(item => item.row).filter(row => row && !knownIds.has(getRowId(row)));
+            return [...pendingRows, ...rows];
+        }
+
+        function hydrateKiemKhoCaches() {
+            if (!productCatalog.length) {
+                const products = readLocalJson(KIEM_KHO_PRODUCT_CACHE_KEY, []);
+                if (Array.isArray(products)) productCatalog = products;
+            }
+            if (!inventoryStockByProduct.size) {
+                const stockEntries = readLocalJson(KIEM_KHO_STOCK_CACHE_KEY, []);
+                if (Array.isArray(stockEntries)) inventoryStockByProduct = new Map(stockEntries);
+            }
+            if (currentTab === 'KIEM_KHO' && !allData.length) {
+                const rows = readLocalJson(KIEM_KHO_HISTORY_CACHE_KEY, []);
+                if (Array.isArray(rows)) {
+                    allData = mergePendingKiemKhoRows(rows);
+                    filteredData = [...allData];
+                }
+            }
+        }
+
+        function showKiemKhoNotice(message) {
+            let notice = document.getElementById('kiemKhoNotice');
+            if (!notice) {
+                notice = document.createElement('div');
+                notice.id = 'kiemKhoNotice';
+                notice.className = 'kiem-kho-notice';
+                document.body.appendChild(notice);
+            }
+            notice.innerText = message;
+            notice.classList.add('active');
+            window.clearTimeout(showKiemKhoNotice.timer);
+            showKiemKhoNotice.timer = window.setTimeout(() => notice.classList.remove('active'), 2600);
+        }
 
         function getRowsPerPageForTab(tabName) {
             return ['XUAT_KHO', 'BC_XUAT_KHO', 'NHAP_KHO', 'TON_KHO', 'KIEM_KHO'].includes(tabName)
@@ -210,6 +280,16 @@ sR2Sh8e3h3Knd6j1tceRIFU=
 
         async function fetchData() {
             document.getElementById('loading').style.display = 'flex';
+            if (currentTab === 'KIEM_KHO' && !navigator.onLine) {
+                allData = [];
+                hydrateKiemKhoCaches();
+                filteredData = [...allData];
+                populateFilters();
+                renderHeaders();
+                renderTable();
+                document.getElementById('loading').style.display = 'none';
+                return;
+            }
             document.querySelector('#loading p').innerText = `Đang tải dữ liệu ${currentTab}...`;
             try {
                 const token = await getAccessToken();
@@ -227,6 +307,8 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                 }
                 if (currentTab === 'KIEM_KHO') {
                     allData.reverse();
+                    allData = mergePendingKiemKhoRows(allData);
+                    cacheKiemKhoHistory(allData);
                 }
                 filteredData = tabConfig.reportType === 'xuat_kho_by_product'
                     ? buildExportReportByProduct(allData)
@@ -236,7 +318,17 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                 renderTable();
             } catch (e) {
                 console.error("Lỗi khi tải dữ liệu:", e);
-                alert("Không thể tải dữ liệu. Vui lòng kiểm tra lại sheet '" + currentTab + "' có tồn tại không.");
+                if (currentTab === 'KIEM_KHO') {
+                    allData = [];
+                    hydrateKiemKhoCaches();
+                    filteredData = [...allData];
+                    populateFilters();
+                    renderHeaders();
+                    renderTable();
+                    showKiemKhoNotice('Dang dung du lieu tren may. Se dong bo khi co mang.');
+                } else {
+                    alert("Không thể tải dữ liệu. Vui lòng kiểm tra lại sheet '" + currentTab + "' có tồn tại không.");
+                }
             } finally {
                 document.getElementById('loading').style.display = 'none';
             }
@@ -462,6 +554,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                 const xuat = xuatByProduct.get(idSp) || 0;
                 inventoryStockByProduct.set(idSp, tonDau + nhap - xuat);
             });
+            writeLocalJson(KIEM_KHO_STOCK_CACHE_KEY, [...inventoryStockByProduct.entries()]);
             return inventoryStockByProduct;
         }
 
@@ -550,6 +643,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             productCatalog = (data.values || [])
                 .map(row => ({ id: String(row[0] || '').trim(), ten_sp: String(row[1] || '').trim() }))
                 .filter(item => item.id);
+            writeLocalJson(KIEM_KHO_PRODUCT_CACHE_KEY, productCatalog);
             return productCatalog;
         }
 
@@ -931,9 +1025,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                     let stock = '';
                     try {
                         if (idSpInput.value) {
-                            if (!inventoryStockByProduct.size) {
-                                await loadInventoryStockMap();
-                            }
+                            if (!inventoryStockByProduct.size) hydrateKiemKhoCaches();
                             stock = inventoryStockByProduct.get(String(idSpInput.value).trim()) ?? 0;
                         } else {
                             stock = '';
@@ -1178,11 +1270,73 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             updateLineTotal();
         }
 
+        async function refreshKiemKhoCaches() {
+            await Promise.allSettled([
+                loadProductCatalog(),
+                loadInventoryStockMap()
+            ]);
+            if (document.getElementById('productModal')?.classList.contains('active')) {
+                updateProductSuggestions();
+                updateProductName(false);
+            }
+        }
+
+        function queueKiemKhoRecord(row) {
+            const pending = getPendingKiemKhoRows();
+            const id = getRowId(row);
+            if (!pending.some(item => getRowId(item.row) === id)) {
+                pending.push({ row: Array.from(row), createdAt: Date.now() });
+                setPendingKiemKhoRows(pending);
+            }
+            if (!allData.some(item => getRowId(item) === id)) {
+                allData.unshift(row);
+            }
+            filteredData = [...allData];
+            cacheKiemKhoHistory(allData);
+            renderTable();
+        }
+
+        async function syncPendingKiemKho() {
+            if (isSyncingKiemKho || !navigator.onLine) return;
+            const pending = getPendingKiemKhoRows();
+            if (!pending.length) return;
+            isSyncingKiemKho = true;
+            try {
+                const token = await getAccessToken();
+                const sheetRows = await fetchSheetRows(CONFIG.tabs.KIEM_KHO.range, token);
+                const existingIds = new Set(sheetRows.map(getRowId));
+                const rowsToAppend = pending.map(item => item.row).filter(row => !existingIds.has(getRowId(row)));
+                await appendRowsToSheet('KIEM_KHO', rowsToAppend);
+                setPendingKiemKhoRows([]);
+                showKiemKhoNotice('Da dong bo kiem kho len Sheet.');
+                if (currentTab === 'KIEM_KHO') {
+                    await fetchData();
+                    filterTable();
+                }
+            } catch (err) {
+                console.warn('Chua dong bo duoc KIEM_KHO:', err);
+            } finally {
+                isSyncingKiemKho = false;
+            }
+        }
+
         async function openRecordForm(rowIndex = null) {
             const modal = document.getElementById('productModal');
             const title = document.getElementById('productModalTitle');
             const row = rowIndex === null ? null : filteredData[rowIndex];
             modal.classList.toggle('wide-record-modal', currentTab === 'KIEM_KHO');
+            if (currentTab === 'KIEM_KHO') {
+                hydrateKiemKhoCaches();
+                document.getElementById('editingSheetRow').value = row ? getDataSheetRow(row) : '';
+                renderFormFields(row);
+                title.innerText = row ? `Sua ${currentTab}` : `Them moi ${currentTab}`;
+                modal.classList.add('active');
+                document.querySelector('[data-field="id_sp"]')?.focus();
+                lucide.createIcons();
+                refreshKiemKhoCaches();
+                syncPendingKiemKho();
+                return;
+            }
             try {
                 await loadProductCatalog();
             } catch (err) {
@@ -1195,14 +1349,6 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                 } catch (err) {
                     console.warn(err);
                     customerCatalog = [];
-                }
-            }
-            if (currentTab === 'KIEM_KHO') {
-                try {
-                    await loadInventoryStockMap();
-                } catch (err) {
-                    console.warn(err);
-                    inventoryStockByProduct = new Map();
                 }
             }
             document.getElementById('editingSheetRow').value = row ? getDataSheetRow(row) : '';
@@ -1230,10 +1376,18 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                 row[0] = generateNextId();
             }
 
+            const editingSheetRow = Number(document.getElementById('editingSheetRow').value);
+            if (currentTab === 'KIEM_KHO' && !editingSheetRow) {
+                queueKiemKhoRecord(row);
+                closeProductForm();
+                showKiemKhoNotice(navigator.onLine ? 'Da luu. Dang dong bo nen...' : 'Da luu tren may. Se dong bo khi co mang.');
+                syncPendingKiemKho();
+                return;
+            }
+
             document.getElementById('loading').style.display = 'flex';
             document.querySelector('#loading p').innerText = `Dang luu ${currentTab}...`;
             try {
-                const editingSheetRow = Number(document.getElementById('editingSheetRow').value);
                 const existing = getRowById(row[0]);
                 const targetSheetRow = editingSheetRow || (existing ? getDataSheetRow(existing) : 0);
                 if (targetSheetRow) {
@@ -1655,6 +1809,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
         }
 
         function initializeMobileApp() {
+            window.addEventListener('online', syncPendingKiemKho);
             window.addEventListener('beforeinstallprompt', event => {
                 event.preventDefault();
                 deferredInstallPrompt = event;
@@ -1669,6 +1824,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                     console.warn('Khong the dang ky service worker:', error);
                 });
             }
+            window.setTimeout(syncPendingKiemKho, 0);
         }
 
         initializeMobileApp();

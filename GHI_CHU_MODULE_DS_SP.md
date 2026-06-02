@@ -146,3 +146,12 @@ Ung dung da ho tro PWA. Khi website duoc mo bang HTTPS, trinh duyet Android se h
 - iPhone Safari: mo website, bam `Share`, sau do chon `Add to Home Screen`.
 - PWA can duoc chay bang HTTPS hoac localhost. Mo truc tiep file `index.html` se khong dang ky duoc service worker.
 - Du lieu Google Sheets luon lay tu mang. Service worker chi luu bo khung giao dien de app mo nhanh hon.
+
+# KIEM_KHO offline
+
+- Bam `Them moi` se mo form ngay bang cache cuc bo, khong cho tai lai DS_SP va TON_KHO.
+- Khi luu dong KIEM_KHO moi, dong duoc luu vao bo nho tren may va hien ngay tren bang.
+- Neu co mang, app dong bo ngam len sheet `KIEM_KHO`.
+- Neu mat mang, app giu hang doi va tu dong dong bo khi dien thoai co mang lai.
+- Truoc khi append, app doc lai sheet va bo qua `id` da ton tai de han che trung dong khi mang chap chon.
+- Nen mo module `KIEM_KHO` it nhat mot lan khi co mang de app luu cache DS_SP, TON_KHO va lich su kiem kho tren dien thoai.
