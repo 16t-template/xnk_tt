@@ -175,3 +175,5 @@ Ung dung da ho tro PWA. Khi website duoc mo bang HTTPS, trinh duyet Android se h
 - Form sua `DS_SP` co nut camera ben canh o `qr` de quet va dien ma QR.
 - Neu mo DS_SP tu form KIEM_KHO, footer form DS_SP co nut `Ve KIEM_KHO` de quay lai form kiem kho va tu dien lai `id_sp`.
 - Camera QR can HTTPS va quyen truy cap camera. Neu trinh duyet khong ho tro camera QR, van dung duoc o QR voi may quet cam tay.
+- Camera cung doc ma vach 1D thong dung: `EAN-13`, `EAN-8`, `UPC-A`, `UPC-E`, `Code 128`, `Code 39`, `ITF`, `Codabar`.
+- Tem hang hoa co 13 chu so nhu `8935259822795` la `EAN-13`. Luu day du 13 chu so nay vao cot `DS_SP.qr`.

@@ -10,14 +10,14 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="XNK TT">
     <title>XNK TT - Danh sach san pham</title>
-    <link rel="manifest" href="manifest.webmanifest?v=8">
+    <link rel="manifest" href="manifest.webmanifest?v=9">
     <link rel="icon" href="icons/xnk-tt.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="icons/xnk-tt-192.png">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jsrsasign/10.5.25/jsrsasign-all-min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=8">
+    <link rel="stylesheet" href="styles.css?v=9">
 </head>
 
 <body>
@@ -194,7 +194,7 @@
     <div class="modal-mask qr-scanner-mask" id="qrScannerModal">
         <div class="qr-scanner-modal">
             <div class="modal-header">
-                <h2>Quet QR san pham</h2>
+                <h2>Quet ma san pham</h2>
                 <button type="button" class="icon-btn" onclick="stopQrScanner()" title="Dong">
                     <i data-lucide="x" style="width:18px;"></i>
                 </button>
@@ -202,14 +202,14 @@
             <div class="qr-camera-frame">
                 <video id="qrScannerVideo" playsinline muted></video>
             </div>
-            <p id="qrScannerStatus">Dua ma QR vao khung camera.</p>
+            <p id="qrScannerStatus">Dua ma QR hoac ma vach vao khung camera.</p>
         </div>
     </div>
     <datalist id="nccOptions"></datalist>
     <datalist id="partnerFilterOptions"></datalist>
     <datalist id="idDonFilterOptions"></datalist>
     <datalist id="filterIdSpOptions"></datalist>
-    <script src="app.js?v=8"></script>
+    <script src="app.js?v=9"></script>
 </body>
 
 </html>

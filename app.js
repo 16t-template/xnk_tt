@@ -1071,7 +1071,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             const status = document.getElementById('qrScannerStatus');
             if (!modal || !video || !status) return;
             if (!('BarcodeDetector' in window)) {
-                showKiemKhoNotice('Trinh duyet chua ho tro camera QR. Hay dung o QR.');
+                showKiemKhoNotice('Trinh duyet chua ho tro camera ma vach. Hay nhap ma thu cong.');
                 document.querySelector(qrScannerTarget === 'DS_SP' ? '[data-field="qr"]' : '#kiemKhoQrInput')?.focus();
                 return;
             }
@@ -1084,8 +1084,13 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                 video.srcObject = qrScannerStream;
                 await video.play();
                 modal.classList.add('active');
-                status.innerText = 'Dua ma QR vao khung camera.';
-                const detector = new BarcodeDetector({ formats: ['qr_code'] });
+                status.innerText = 'Dua ma QR hoac ma vach vao khung camera.';
+                const requestedFormats = ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'itf', 'codabar', 'qr_code'];
+                const supportedFormats = typeof BarcodeDetector.getSupportedFormats === 'function'
+                    ? await BarcodeDetector.getSupportedFormats()
+                    : requestedFormats;
+                const formats = requestedFormats.filter(format => supportedFormats.includes(format));
+                const detector = formats.length ? new BarcodeDetector({ formats }) : new BarcodeDetector();
                 const scan = async () => {
                     if (!qrScannerStream) return;
                     try {
@@ -1094,17 +1099,17 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                         if (value) {
                             if (applyScannedQr(value)) {
                                 stopQrScanner();
-                                showKiemKhoNotice(qrScannerTarget === 'DS_SP' ? 'Da quet va dien QR.' : 'Da quet QR va dien id_sp.');
+                                showKiemKhoNotice(qrScannerTarget === 'DS_SP' ? 'Da quet va dien ma.' : 'Da quet ma va dien id_sp.');
                                 return;
                             }
-                            status.innerText = 'QR chua co trong DS_SP.';
+                            status.innerText = 'Ma vach chua co trong DS_SP.';
                         }
                     } catch (_) { }
                     qrScannerFrame = window.requestAnimationFrame(scan);
                 };
                 qrScannerFrame = window.requestAnimationFrame(scan);
             } catch (err) {
-                console.warn('Khong mo duoc camera QR:', err);
+                console.warn('Khong mo duoc camera ma vach:', err);
                 showKiemKhoNotice('Khong mo duoc camera. Hay kiem tra quyen camera.');
             }
         }
@@ -1994,7 +1999,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                     isReloadingForUpdate = true;
                     window.location.reload();
                 });
-                navigator.serviceWorker.register('./sw.js?v=8', { updateViaCache: 'none' })
+                navigator.serviceWorker.register('./sw.js?v=9', { updateViaCache: 'none' })
                     .then(registration => registration.update())
                     .catch(error => {
                         console.warn('Khong the dang ky service worker:', error);
