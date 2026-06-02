@@ -178,3 +178,4 @@ Ung dung da ho tro PWA. Khi website duoc mo bang HTTPS, trinh duyet Android se h
 - Camera QR can HTTPS va quyen truy cap camera. Neu trinh duyet khong ho tro camera QR, van dung duoc o QR voi may quet cam tay.
 - Camera cung doc ma vach 1D thong dung: `EAN-13`, `EAN-8`, `UPC-A`, `UPC-E`, `Code 128`, `Code 39`, `ITF`, `Codabar`.
 - Tem hang hoa co 13 chu so nhu `8935259822795` la `EAN-13`. Luu day du 13 chu so nay vao cot `DS_SP.qr`.
+- Camera luon nhan va giu ma vua quet. Sau khi quet xong app moi tra `DS_SP.qr`: tim thay thi dien `id_sp`, chua tim thay thi van giu ma trong o QR de bo sung san pham sau.

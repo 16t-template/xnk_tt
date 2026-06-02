@@ -1021,12 +1021,16 @@ sR2Sh8e3h3Knd6j1tceRIFU=
         function applyKiemKhoQr(rawValue) {
             const value = String(rawValue || '').trim();
             if (!value) return false;
-            const product = productCatalog.find(item => String(item.qr || '').trim() === value);
-            if (!product) return false;
             const idSpInput = document.querySelector('[data-field="id_sp"]');
             const qrInput = document.getElementById('kiemKhoQrInput');
-            if (idSpInput) idSpInput.value = product.id;
             if (qrInput) qrInput.value = value;
+            const product = productCatalog.find(item => String(item.qr || '').trim() === value);
+            if (!product) {
+                if (idSpInput) idSpInput.value = '';
+                updateProductName(true, false);
+                return false;
+            }
+            if (idSpInput) idSpInput.value = product.id;
             updateProductName(true, false);
             return true;
         }
@@ -1059,9 +1063,11 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                 const input = document.querySelector('[data-field="qr"]');
                 if (!input) return false;
                 input.value = String(value || '').trim();
-                return !!input.value;
+                return { captured: !!input.value, matched: true };
             }
-            return applyKiemKhoQr(value);
+            const captured = !!String(value || '').trim();
+            const matched = applyKiemKhoQr(value);
+            return { captured, matched };
         }
 
         async function startQrScanner(target = 'KIEM_KHO') {
@@ -1097,12 +1103,18 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                         const codes = await detector.detect(video);
                         const value = codes[0]?.rawValue || '';
                         if (value) {
-                            if (applyScannedQr(value)) {
+                            const result = applyScannedQr(value);
+                            if (result.captured) {
                                 stopQrScanner();
-                                showKiemKhoNotice(qrScannerTarget === 'DS_SP' ? 'Da quet va dien ma.' : 'Da quet ma va dien id_sp.');
+                                if (qrScannerTarget === 'DS_SP') {
+                                    showKiemKhoNotice('Da quet va dien ma.');
+                                } else if (result.matched) {
+                                    showKiemKhoNotice('Da quet ma va dien id_sp.');
+                                } else {
+                                    showKiemKhoNotice('Da quet ma. Chua tim thay id_sp trong DS_SP.');
+                                }
                                 return;
                             }
-                            status.innerText = 'Ma vach chua co trong DS_SP.';
                         }
                     } catch (_) { }
                     qrScannerFrame = window.requestAnimationFrame(scan);
@@ -2002,7 +2014,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                     isReloadingForUpdate = true;
                     window.location.reload();
                 });
-                navigator.serviceWorker.register('./sw.js?v=10', { updateViaCache: 'none' })
+                navigator.serviceWorker.register('./sw.js?v=11', { updateViaCache: 'none' })
                     .then(registration => registration.update())
                     .catch(error => {
                         console.warn('Khong the dang ky service worker:', error);
