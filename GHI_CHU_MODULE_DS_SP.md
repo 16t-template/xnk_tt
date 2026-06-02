@@ -174,7 +174,9 @@ Ung dung da ho tro PWA. Khi website duoc mo bang HTTPS, trinh duyet Android se h
 - Co the dung may quet cam tay de nhap vao o QR, hoac bam nut camera ben canh o QR tren dien thoai.
 - Nut sua ben canh `id_sp` mo module `DS_SP` va mo dung san pham dang chon.
 - Form sua `DS_SP` co nut camera ben canh o `qr` de quet va dien ma QR.
-- Neu mo DS_SP tu form KIEM_KHO, footer form DS_SP co nut `Ve KIEM_KHO` de quay lai form kiem kho va tu dien lai `id_sp`.
+- Sau khi camera quet ma trong form `DS_SP`, app tu luu ngay. Neu form duoc mo tu `KIEM_KHO`, app tu quay ve form kiem kho sau khi luu thanh cong.
+- Neu mo DS_SP tu form KIEM_KHO, footer form DS_SP co nut `Luu va ve KIEM_KHO`. Nut nay tu luu DS_SP, quay lai form kiem kho va dien lai `id_sp`.
+- Neu bam nut `Luu` thong thuong trong form DS_SP dang mo tu KIEM_KHO, app cung tu quay lai form kiem kho sau khi luu thanh cong.
 - Camera QR can HTTPS va quyen truy cap camera. Neu trinh duyet khong ho tro camera QR, van dung duoc o QR voi may quet cam tay.
 - Camera cung doc ma vach 1D thong dung: `EAN-13`, `EAN-8`, `UPC-A`, `UPC-E`, `Code 128`, `Code 39`, `ITF`, `Codabar`.
 - Tem hang hoa co 13 chu so nhu `8935259822795` la `EAN-13`. Luu day du 13 chu so nay vao cot `DS_SP.qr`.

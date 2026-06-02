@@ -1108,6 +1108,9 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                                 stopQrScanner();
                                 if (qrScannerTarget === 'DS_SP') {
                                     showKiemKhoNotice('Da quet va dien ma.');
+                                    window.setTimeout(() => {
+                                        document.querySelector('#productModal form')?.requestSubmit();
+                                    }, 0);
                                 } else if (result.matched) {
                                     showKiemKhoNotice('Da quet ma va dien id_sp.');
                                 } else {
@@ -1527,8 +1530,11 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             button.style.display = currentTab === 'DS_SP' && returnToKiemKhoIdSp ? 'flex' : 'none';
         }
 
-        async function returnToKiemKhoForm() {
-            const idSp = returnToKiemKhoIdSp;
+        function saveDsSpAndReturnToKiemKho() {
+            document.querySelector('#productModal form')?.requestSubmit();
+        }
+
+        async function returnToKiemKhoForm(idSp = returnToKiemKhoIdSp) {
             returnToKiemKhoIdSp = '';
             closeProductForm();
             await switchTab('KIEM_KHO');
@@ -1565,6 +1571,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             document.getElementById('loading').style.display = 'flex';
             document.querySelector('#loading p').innerText = `Dang luu ${currentTab}...`;
             try {
+                const linkedKiemKhoIdSp = currentTab === 'DS_SP' ? returnToKiemKhoIdSp : '';
                 const existing = getRowById(row[0]);
                 const targetSheetRow = editingSheetRow || (existing ? getDataSheetRow(existing) : 0);
                 if (targetSheetRow) {
@@ -1576,6 +1583,9 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                 closeProductForm();
                 await fetchData();
                 filterTable();
+                if (linkedKiemKhoIdSp) {
+                    await returnToKiemKhoForm(linkedKiemKhoIdSp);
+                }
             } catch (err) {
                 console.error(err);
                 alert(`Khong luu duoc ${currentTab}: ` + err.message);
@@ -2014,7 +2024,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                     isReloadingForUpdate = true;
                     window.location.reload();
                 });
-                navigator.serviceWorker.register('./sw.js?v=11', { updateViaCache: 'none' })
+                navigator.serviceWorker.register('./sw.js?v=13', { updateViaCache: 'none' })
                     .then(registration => registration.update())
                     .catch(error => {
                         console.warn('Khong the dang ky service worker:', error);

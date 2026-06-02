@@ -10,14 +10,14 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="XNK TT">
     <title>XNK TT - Danh sach san pham</title>
-    <link rel="manifest" href="manifest.webmanifest?v=11">
+    <link rel="manifest" href="manifest.webmanifest?v=13">
     <link rel="icon" href="icons/xnk-tt.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="icons/xnk-tt-192.png">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jsrsasign/10.5.25/jsrsasign-all-min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=11">
+    <link rel="stylesheet" href="styles.css?v=13">
 </head>
 
 <body>
@@ -183,8 +183,8 @@
             <input type="hidden" id="editingSheetRow">
             <div id="formFields" class="form-fields"></div>
             <div class="modal-actions">
-                <button id="returnToKiemKhoBtn" type="button" class="secondary-btn return-kiem-kho-btn" onclick="returnToKiemKhoForm()" style="display:none;">
-                    <i data-lucide="arrow-left" style="width:16px;"></i> Ve KIEM_KHO
+                <button id="returnToKiemKhoBtn" type="button" class="secondary-btn return-kiem-kho-btn" onclick="saveDsSpAndReturnToKiemKho()" style="display:none;">
+                    <i data-lucide="save" style="width:16px;"></i> Luu va ve KIEM_KHO
                 </button>
                 <button type="button" class="secondary-btn" onclick="closeProductForm()">Huy</button>
                 <button type="submit" class="primary-btn">Luu</button>
@@ -209,7 +209,7 @@
     <datalist id="partnerFilterOptions"></datalist>
     <datalist id="idDonFilterOptions"></datalist>
     <datalist id="filterIdSpOptions"></datalist>
-    <script src="app.js?v=11"></script>
+    <script src="app.js?v=13"></script>
 </body>
 
 </html>
