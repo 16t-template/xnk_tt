@@ -134,6 +134,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
 
         async function switchTab(tabName) {
             currentTab = CONFIG.tabs[tabName] ? tabName : 'DS_SP';
+            document.body.classList.toggle('kiem-kho-active', currentTab === 'KIEM_KHO');
             try { sessionStorage.setItem(XNK_TT_TAB_STORAGE_KEY, currentTab); } catch (_) { /* ignore */ }
             document.querySelectorAll('.tab').forEach(t => {
                 t.classList.toggle('active', t.dataset.tab === currentTab);

@@ -1178,6 +1178,10 @@
                 display: none !important;
             }
 
+            body.kiem-kho-active #addBtn {
+                display: flex !important;
+            }
+
             .search-input {
                 height: 44px;
                 font-size: 16px;
