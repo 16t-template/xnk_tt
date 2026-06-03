@@ -164,6 +164,13 @@ Ung dung da ho tro PWA. Khi website duoc mo bang HTTPS, trinh duyet Android se h
 - Neu mat mang, app giu hang doi va tu dong dong bo khi dien thoai co mang lai.
 - Truoc khi append, app doc lai sheet va bo qua `id` da ton tai de han che trung dong khi mang chap chon.
 - Nen mo module `KIEM_KHO` it nhat mot lan khi co mang de app luu cache DS_SP, TON_KHO va lich su kiem kho tren dien thoai.
+
+# DS_SP offline
+
+- Form `DS_SP` luu duoc khi khong co mang.
+- Dong them/sua duoc luu tren may, hien ngay tren bang va dua vao hang doi dong bo.
+- Khi co mang lai, app tu dong bo `DS_SP` len Sheet theo `id`: id da co thi cap nhat, id chua co thi them dong.
+- Cache DS_SP cung duoc dung cho tra ma QR/ma vach trong KIEM_KHO.
 - PWA khoa huong man hinh `portrait-primary` de giu giao dien dien thoai theo chieu doc.
 - Khi chay trong trinh duyet web thong thuong, he dieu hanh co the khong cho website khoa xoay. Ban cai tren man hinh chinh ap dung on dinh hon.
 
@@ -172,7 +179,8 @@ Ung dung da ho tro PWA. Khi website duoc mo bang HTTPS, trinh duyet Android se h
 - Sheet `DS_SP` co thu tu cot: `id`, `ten_sp`, `ncc`, `ghi_chu`, `qr`, `anh`.
 - Sheet `KIEM_KHO` co thu tu cot: `id`, `ngay`, `id_sp`, `slg_ton`, `thuc_te`, `slg_lech`, `vi_tri`, `ghi_chu`, `anh`.
 - Truoc khi tai anh len ImgBB, can dien API key vao `CONFIG.imgbbApiKey` trong `app.js`.
-- Truong `anh` co 2 nut: tai anh co san va chup anh bang camera dien thoai. Sau khi chon/chup, anh duoc upload len ImgBB va luu URL vao sheet.
+- Truong `anh` co 2 nut: tai anh co san va chup anh bang camera dien thoai. Sau khi chon/chup, anh duoc upload len ImgBB va noi them URL vao sheet, cho phep luu nhieu anh trong mot o bang dau phay.
+- Khi luu `KIEM_KHO` co anh va co `id_sp`, app tu ghep them anh do vao `DS_SP.anh` cung `id_sp`, khong ghi de anh cu.
 - Form `KIEM_KHO` co o QR ao. QR khong ghi them vao sheet `KIEM_KHO`; app dung QR de tra `DS_SP.qr` va dien `id_sp`.
 - Co the dung may quet cam tay de nhap vao o QR, hoac bam nut camera ben canh o QR tren dien thoai.
 - Nut sua ben canh `id_sp` mo module `DS_SP` va mo dung san pham dang chon.

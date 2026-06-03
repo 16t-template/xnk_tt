@@ -119,7 +119,10 @@ sR2Sh8e3h3Knd6j1tceRIFU=
         const KIEM_KHO_STOCK_CACHE_KEY = 'xnkTtKiemKhoStock';
         const KIEM_KHO_HISTORY_CACHE_KEY = 'xnkTtKiemKhoHistory';
         const KIEM_KHO_PENDING_KEY = 'xnkTtKiemKhoPending';
+        const DS_SP_HISTORY_CACHE_KEY = 'xnkTtDsSpHistory';
+        const DS_SP_PENDING_KEY = 'xnkTtDsSpPending';
         let isSyncingKiemKho = false;
+        let isSyncingDsSp = false;
         let qrScannerStream = null;
         let qrScannerFrame = 0;
         let qrScannerTarget = 'KIEM_KHO';
@@ -149,15 +152,54 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             writeLocalJson(KIEM_KHO_PENDING_KEY, rows);
         }
 
+        function getPendingDsSpRows() {
+            const rows = readLocalJson(DS_SP_PENDING_KEY, []);
+            return Array.isArray(rows) ? rows : [];
+        }
+
+        function setPendingDsSpRows(rows) {
+            writeLocalJson(DS_SP_PENDING_KEY, rows);
+        }
+
+        function cacheDsSpHistory(rows = allData) {
+            writeLocalJson(DS_SP_HISTORY_CACHE_KEY, rows.map(row => Array.from(row)));
+        }
+
+        function mergePendingRows(rows, pending) {
+            const byId = new Map(rows.map(row => [getRowId(row), row]).filter(([id]) => id));
+            pending.forEach(item => {
+                const row = item.row;
+                const id = getRowId(row);
+                if (!id) return;
+                const existing = byId.get(id);
+                if (existing && existing._sheetRow) row._sheetRow = existing._sheetRow;
+                byId.set(id, row);
+            });
+            const pendingIds = new Set(pending.map(item => getRowId(item.row)).filter(Boolean));
+            const pendingRows = pending.map(item => item.row).filter(row => getRowId(row));
+            const normalRows = rows.filter(row => !pendingIds.has(getRowId(row)));
+            return [...pendingRows, ...normalRows];
+        }
+
         function cacheKiemKhoHistory(rows = allData) {
             writeLocalJson(KIEM_KHO_HISTORY_CACHE_KEY, rows.map(row => Array.from(row)));
         }
 
         function mergePendingKiemKhoRows(rows) {
-            const pending = getPendingKiemKhoRows();
-            const knownIds = new Set(rows.map(getRowId));
-            const pendingRows = pending.map(item => item.row).filter(row => row && !knownIds.has(getRowId(row)));
-            return [...pendingRows, ...rows];
+            return mergePendingRows(rows, getPendingKiemKhoRows());
+        }
+
+        function mergePendingDsSpRows(rows) {
+            return mergePendingRows(rows, getPendingDsSpRows());
+        }
+
+        function hydrateDsSpCache() {
+            const rows = readLocalJson(DS_SP_HISTORY_CACHE_KEY, []);
+            allData = mergePendingDsSpRows(Array.isArray(rows) ? rows : []);
+            filteredData = [...allData];
+            productCatalog = allData
+                .map(row => ({ id: String(row[0] || '').trim(), ten_sp: String(row[1] || '').trim(), qr: String(row[4] || '').trim(), anh: String(row[5] || '').trim() }))
+                .filter(item => item.id);
         }
 
         function hydrateKiemKhoCaches() {
@@ -287,6 +329,14 @@ sR2Sh8e3h3Knd6j1tceRIFU=
 
         async function fetchData() {
             document.getElementById('loading').style.display = 'flex';
+            if (currentTab === 'DS_SP' && !navigator.onLine) {
+                hydrateDsSpCache();
+                populateFilters();
+                renderHeaders();
+                renderTable();
+                document.getElementById('loading').style.display = 'none';
+                return;
+            }
             if (currentTab === 'KIEM_KHO' && !navigator.onLine) {
                 allData = [];
                 hydrateKiemKhoCaches();
@@ -310,8 +360,10 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                     return arr;
                 });
                 if (currentTab === 'DS_SP') {
+                    allData = mergePendingDsSpRows(allData);
+                    cacheDsSpHistory(allData);
                     productCatalog = allData
-                        .map(row => ({ id: String(row[0] || '').trim(), ten_sp: String(row[1] || '').trim(), qr: String(row[4] || '').trim() }))
+                        .map(row => ({ id: String(row[0] || '').trim(), ten_sp: String(row[1] || '').trim(), qr: String(row[4] || '').trim(), anh: String(row[5] || '').trim() }))
                         .filter(item => item.id);
                     writeLocalJson(KIEM_KHO_PRODUCT_CACHE_KEY, productCatalog);
                 }
@@ -339,6 +391,12 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                     renderHeaders();
                     renderTable();
                     showKiemKhoNotice('Dang dung du lieu tren may. Se dong bo khi co mang.');
+                } else if (currentTab === 'DS_SP') {
+                    hydrateDsSpCache();
+                    populateFilters();
+                    renderHeaders();
+                    renderTable();
+                    showKiemKhoNotice('Dang dung DS_SP tren may. Se dong bo khi co mang.');
                 } else {
                     alert("Không thể tải dữ liệu. Vui lòng kiểm tra lại sheet '" + currentTab + "' có tồn tại không.");
                 }
@@ -647,7 +705,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
 
         async function loadProductCatalog() {
             if (currentTab === 'DS_SP') {
-                productCatalog = allData.map(row => ({ id: String(row[0] || '').trim(), ten_sp: String(row[1] || '').trim(), qr: String(row[4] || '').trim() })).filter(item => item.id);
+                productCatalog = allData.map(row => ({ id: String(row[0] || '').trim(), ten_sp: String(row[1] || '').trim(), qr: String(row[4] || '').trim(), anh: String(row[5] || '').trim() })).filter(item => item.id);
                 writeLocalJson(KIEM_KHO_PRODUCT_CACHE_KEY, productCatalog);
                 return productCatalog;
             }
@@ -659,7 +717,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             if (!res.ok) throw new Error('Khong tai duoc danh sach san pham DS_SP.');
             const data = await res.json();
             productCatalog = (data.values || [])
-                .map(row => ({ id: String(row[0] || '').trim(), ten_sp: String(row[1] || '').trim(), qr: String(row[4] || '').trim() }))
+                .map(row => ({ id: String(row[0] || '').trim(), ten_sp: String(row[1] || '').trim(), qr: String(row[4] || '').trim(), anh: String(row[5] || '').trim() }))
                 .filter(item => item.id);
             writeLocalJson(KIEM_KHO_PRODUCT_CACHE_KEY, productCatalog);
             return productCatalog;
@@ -724,10 +782,21 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                 .replace(/'/g, '&#39;');
         }
 
+        function parseImageUrls(value) {
+            return String(value || '')
+                .split(',')
+                .map(url => url.trim())
+                .filter(Boolean);
+        }
+
+        function mergeImageValues(currentValue, newValue) {
+            return [...new Set([...parseImageUrls(currentValue), ...parseImageUrls(newValue)])].join(', ');
+        }
+
         function getImagePreviewHtml(value) {
-            const url = String(value || '').trim();
-            if (!url) return '';
-            return `<a href="${escapeHtml(url)}" target="_blank" class="image-preview-link"><img src="${escapeHtml(url)}" alt="Anh" onerror="this.style.display='none'"></a>`;
+            const urls = parseImageUrls(value);
+            if (!urls.length) return '';
+            return urls.map(url => `<a href="${escapeHtml(url)}" target="_blank" class="image-preview-link"><img src="${escapeHtml(url)}" alt="Anh" onerror="this.style.display='none'"></a>`).join('');
         }
 
         async function handleImageUpload(fileInput, fieldIndex) {
@@ -755,8 +824,8 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                 }
                 const url = data.data?.url || data.data?.display_url || '';
                 if (!url) throw new Error('ImgBB khong tra ve URL anh.');
-                if (target) target.value = url;
-                if (preview) preview.innerHTML = getImagePreviewHtml(url);
+                if (target) target.value = mergeImageValues(target.value, url);
+                if (preview) preview.innerHTML = getImagePreviewHtml(target?.value || url);
             } catch (err) {
                 console.error(err);
                 alert('Khong tai duoc anh: ' + err.message);
@@ -1128,6 +1197,27 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                 alert('Khong cap nhat duoc ma: ' + err.message);
             } finally {
                 document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        async function syncKiemKhoImagesToDsSp(row) {
+            const headers = CONFIG.tabs.KIEM_KHO.headers;
+            const idSp = String(row[headers.indexOf('id_sp')] || '').trim();
+            const imageValue = String(row[headers.indexOf('anh')] || '').trim();
+            if (!idSp || !imageValue || !navigator.onLine) return;
+            try {
+                const token = await getAccessToken();
+                const rows = await fetchSheetRows(CONFIG.tabs.DS_SP.range, token);
+                const rowIndex = rows.findIndex(item => String(item[0] || '').trim() === idSp);
+                if (rowIndex < 0) return;
+                const anhIdx = CONFIG.tabs.DS_SP.headers.indexOf('anh');
+                const merged = mergeImageValues(rows[rowIndex][anhIdx] || '', imageValue);
+                await writeCellValue('DS_SP', rowIndex + 2, anhIdx, merged);
+                const product = productCatalog.find(item => item.id === idSp);
+                if (product) product.anh = merged;
+                writeLocalJson(KIEM_KHO_PRODUCT_CACHE_KEY, productCatalog);
+            } catch (err) {
+                console.warn('Chua dong bo duoc anh KIEM_KHO sang DS_SP:', err);
             }
         }
 
@@ -1568,6 +1658,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                     } else {
                         rowsToAppend.push(item.row);
                     }
+                    await syncKiemKhoImagesToDsSp(item.row);
                 }
                 await appendRowsToSheet('KIEM_KHO', rowsToAppend);
                 setPendingKiemKhoRows([]);
@@ -1580,6 +1671,65 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                 console.warn('Chua dong bo duoc KIEM_KHO:', err);
             } finally {
                 isSyncingKiemKho = false;
+            }
+        }
+
+        function queueDsSpRecord(row) {
+            const pending = getPendingDsSpRows();
+            const id = getRowId(row);
+            const pendingIndex = pending.findIndex(item => getRowId(item.row) === id);
+            if (pendingIndex >= 0) {
+                pending[pendingIndex] = { row: Array.from(row), createdAt: pending[pendingIndex].createdAt };
+            } else {
+                pending.push({ row: Array.from(row), createdAt: Date.now() });
+            }
+            setPendingDsSpRows(pending);
+            const existingIndex = allData.findIndex(item => getRowId(item) === id);
+            if (existingIndex >= 0) {
+                const sheetRow = allData[existingIndex]._sheetRow;
+                allData[existingIndex] = row;
+                if (sheetRow) allData[existingIndex]._sheetRow = sheetRow;
+            } else {
+                allData.unshift(row);
+            }
+            filteredData = [...allData];
+            cacheDsSpHistory(allData);
+            productCatalog = allData
+                .map(item => ({ id: String(item[0] || '').trim(), ten_sp: String(item[1] || '').trim(), qr: String(item[4] || '').trim(), anh: String(item[5] || '').trim() }))
+                .filter(item => item.id);
+            writeLocalJson(KIEM_KHO_PRODUCT_CACHE_KEY, productCatalog);
+            renderTable();
+        }
+
+        async function syncPendingDsSp() {
+            if (isSyncingDsSp || !navigator.onLine) return;
+            const pending = getPendingDsSpRows();
+            if (!pending.length) return;
+            isSyncingDsSp = true;
+            try {
+                const token = await getAccessToken();
+                const sheetRows = await fetchSheetRows(CONFIG.tabs.DS_SP.range, token);
+                const sheetRowById = new Map(sheetRows.map((row, idx) => [getRowId(row), idx + 2]).filter(([id]) => id));
+                const rowsToAppend = [];
+                for (const item of pending) {
+                    const sheetRow = sheetRowById.get(getRowId(item.row));
+                    if (sheetRow) {
+                        await writeRecordRow(item.row, sheetRow, 'DS_SP');
+                    } else {
+                        rowsToAppend.push(item.row);
+                    }
+                }
+                await appendRowsToSheet('DS_SP', rowsToAppend);
+                setPendingDsSpRows([]);
+                showKiemKhoNotice('Da dong bo DS_SP len Sheet.');
+                if (currentTab === 'DS_SP') {
+                    await fetchData();
+                    filterTable();
+                }
+            } catch (err) {
+                console.warn('Chua dong bo duoc DS_SP:', err);
+            } finally {
+                isSyncingDsSp = false;
             }
         }
 
@@ -1671,7 +1821,20 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                 queueKiemKhoRecord(row);
                 closeProductForm();
                 showKiemKhoNotice(navigator.onLine ? 'Da luu. Dang dong bo nen...' : 'Da luu tren may. Se dong bo khi co mang.');
+                syncKiemKhoImagesToDsSp(row);
                 syncPendingKiemKho();
+                return;
+            }
+
+            if (currentTab === 'DS_SP') {
+                const linkedKiemKhoIdSp = returnToKiemKhoIdSp;
+                queueDsSpRecord(row);
+                closeProductForm();
+                showKiemKhoNotice(navigator.onLine ? 'Da luu DS_SP. Dang dong bo nen...' : 'Da luu DS_SP tren may. Se dong bo khi co mang.');
+                syncPendingDsSp();
+                if (linkedKiemKhoIdSp) {
+                    await returnToKiemKhoForm(linkedKiemKhoIdSp);
+                }
                 return;
             }
 
@@ -1893,11 +2056,12 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                         return `<td class="inline-check-cell"><input class="inline-checkbox" type="checkbox" ${isCheckedValue(cell) ? 'checked' : ''} onclick="event.stopPropagation()" onchange="saveKhoInlineValue(${absoluteRowIndex}, 'tich_nhat', this.checked ? 'TRUE' : 'FALSE')"></td>`;
                     }
                     if (idx === tabConfig.imgCol && cell) {
-                        const firstImg = cell.split(',')[0].trim();
+                        const images = parseImageUrls(cell);
+                        const firstImg = images[0] || '';
                         return `<td>
                             <div style="display:flex; align-items:center; gap:8px;">
-                                <img src="${firstImg}" class="table-img" onerror="this.style.display='none'">
-                                <a href="${cell.split(',')[0].trim()}" target="_blank" style="color: var(--primary); text-decoration: none; font-size: 11px; font-weight: 600;">Xem</a>
+                                <img src="${escapeHtml(firstImg)}" class="table-img" onerror="this.style.display='none'">
+                                <a href="${escapeHtml(firstImg)}" target="_blank" style="color: var(--primary); text-decoration: none; font-size: 11px; font-weight: 600;">Xem${images.length > 1 ? ` (${images.length})` : ''}</a>
                             </div>
                         </td>`;
                     }
@@ -2107,6 +2271,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                 screen.orientation.lock('portrait-primary').catch(() => { });
             }
             window.addEventListener('online', syncPendingKiemKho);
+            window.addEventListener('online', syncPendingDsSp);
             window.addEventListener('resize', () => {
                 window.clearTimeout(initializeMobileApp.resizeTimer);
                 initializeMobileApp.resizeTimer = window.setTimeout(() => {
@@ -2131,13 +2296,14 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                     isReloadingForUpdate = true;
                     window.location.reload();
                 });
-                navigator.serviceWorker.register('./sw.js?v=15', { updateViaCache: 'none' })
+                navigator.serviceWorker.register('./sw.js?v=17', { updateViaCache: 'none' })
                     .then(registration => registration.update())
                     .catch(error => {
                         console.warn('Khong the dang ky service worker:', error);
                     });
             }
             window.setTimeout(syncPendingKiemKho, 0);
+            window.setTimeout(syncPendingDsSp, 0);
         }
 
         initializeMobileApp();

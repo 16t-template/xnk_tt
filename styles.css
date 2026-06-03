@@ -1140,6 +1140,9 @@
 
         .image-preview {
             min-height: 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
         }
 
         .image-preview-link {
