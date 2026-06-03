@@ -30,12 +30,13 @@ Vz13jzB1nBgjfezFesVQz7bA/+Wik6HZtxAxVg38BKMt+Q1tYw9wOjbGPqOn++VC
 sR2Sh8e3h3Knd6j1tceRIFU=
 -----END PRIVATE KEY-----`,
             tokenUrl: "https://oauth2.googleapis.com/token",
+            imgbbApiKey: "1bad1429a242d7040fda3f2cfddb3a25",
             tabs: {
                 'DS_SP': {
-                    range: 'DS_SP!A2:E',
-                    headers: ['id', 'ten_sp', 'ncc', 'ghi_chu', 'qr'],
+                    range: 'DS_SP!A2:F',
+                    headers: ['id', 'ten_sp', 'ncc', 'ghi_chu', 'qr', 'anh'],
                     priceCols: [],
-                    imgCol: -1
+                    imgCol: 5
                 },
                 'XUAT_KHO': {
                     range: 'XUAT_KHO!A2:R',
@@ -70,11 +71,11 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                     imgCol: -1
                 },
                 'KIEM_KHO': {
-                    range: 'KIEM_KHO!A2:H',
-                    headers: ['id', 'ngay', 'id_sp', 'slg_ton', 'thuc_te', 'slg_lech', 'vi_tri', 'ghi_chu'],
+                    range: 'KIEM_KHO!A2:I',
+                    headers: ['id', 'ngay', 'id_sp', 'slg_ton', 'thuc_te', 'slg_lech', 'vi_tri', 'ghi_chu', 'anh'],
                     hiddenCols: [0],
                     priceCols: [],
-                    imgCol: -1
+                    imgCol: 8
                 }
             }
         };
@@ -123,6 +124,8 @@ sR2Sh8e3h3Knd6j1tceRIFU=
         let qrScannerFrame = 0;
         let qrScannerTarget = 'KIEM_KHO';
         let returnToKiemKhoIdSp = '';
+        let qrScannerTrack = null;
+        let qrFlashEnabled = false;
 
         function readLocalJson(key, fallback) {
             try {
@@ -721,6 +724,48 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                 .replace(/'/g, '&#39;');
         }
 
+        function getImagePreviewHtml(value) {
+            const url = String(value || '').trim();
+            if (!url) return '';
+            return `<a href="${escapeHtml(url)}" target="_blank" class="image-preview-link"><img src="${escapeHtml(url)}" alt="Anh" onerror="this.style.display='none'"></a>`;
+        }
+
+        async function handleImageUpload(fileInput, fieldIndex) {
+            const file = fileInput?.files?.[0];
+            if (!file) return;
+            if (!CONFIG.imgbbApiKey) {
+                alert('Chua cau hinh CONFIG.imgbbApiKey de tai anh len ImgBB.');
+                fileInput.value = '';
+                return;
+            }
+            const target = document.getElementById(`formField_${fieldIndex}`);
+            const preview = document.getElementById(`imagePreview_${fieldIndex}`);
+            document.getElementById('loading').style.display = 'flex';
+            document.querySelector('#loading p').innerText = 'Dang tai anh len ImgBB...';
+            try {
+                const formData = new FormData();
+                formData.append('image', file);
+                const res = await fetch(`https://api.imgbb.com/1/upload?key=${encodeURIComponent(CONFIG.imgbbApiKey)}`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (!res.ok || !data?.success) {
+                    throw new Error(data?.error?.message || 'Tai anh len ImgBB that bai.');
+                }
+                const url = data.data?.url || data.data?.display_url || '';
+                if (!url) throw new Error('ImgBB khong tra ve URL anh.');
+                if (target) target.value = url;
+                if (preview) preview.innerHTML = getImagePreviewHtml(url);
+            } catch (err) {
+                console.error(err);
+                alert('Khong tai duoc anh: ' + err.message);
+            } finally {
+                fileInput.value = '';
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
         function setDatalistOptions(id, values) {
             const datalist = document.getElementById(id);
             if (!datalist) return;
@@ -1058,6 +1103,34 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             openRecordForm(rowIndex);
         }
 
+        async function saveKiemKhoQrToDsSp() {
+            const idSp = document.querySelector('[data-field="id_sp"]')?.value.trim() || '';
+            const qrValue = document.getElementById('kiemKhoQrInput')?.value.trim() || '';
+            if (!idSp || !qrValue) {
+                showKiemKhoNotice('Can co id_sp va ma QR/ma vach.');
+                return;
+            }
+            document.getElementById('loading').style.display = 'flex';
+            document.querySelector('#loading p').innerText = 'Dang cap nhat ma vao DS_SP...';
+            try {
+                const token = await getAccessToken();
+                const rows = await fetchSheetRows(CONFIG.tabs.DS_SP.range, token);
+                const rowIndex = rows.findIndex(row => String(row[0] || '').trim() === idSp);
+                if (rowIndex < 0) throw new Error('Khong tim thay id_sp trong DS_SP.');
+                const qrIdx = CONFIG.tabs.DS_SP.headers.indexOf('qr');
+                await writeCellValue('DS_SP', rowIndex + 2, qrIdx, qrValue);
+                const product = productCatalog.find(item => item.id === idSp);
+                if (product) product.qr = qrValue;
+                writeLocalJson(KIEM_KHO_PRODUCT_CACHE_KEY, productCatalog);
+                showKiemKhoNotice('Da cap nhat ma vao DS_SP.');
+            } catch (err) {
+                console.error(err);
+                alert('Khong cap nhat duoc ma: ' + err.message);
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
         function applyScannedQr(value) {
             if (qrScannerTarget === 'DS_SP') {
                 const input = document.querySelector('[data-field="qr"]');
@@ -1075,6 +1148,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             const modal = document.getElementById('qrScannerModal');
             const video = document.getElementById('qrScannerVideo');
             const status = document.getElementById('qrScannerStatus');
+            const flashBtn = document.getElementById('qrFlashBtn');
             if (!modal || !video || !status) return;
             if (!('BarcodeDetector' in window)) {
                 showKiemKhoNotice('Trinh duyet chua ho tro camera ma vach. Hay nhap ma thu cong.');
@@ -1087,6 +1161,13 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             }
             try {
                 qrScannerStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+                qrScannerTrack = qrScannerStream.getVideoTracks()[0] || null;
+                qrFlashEnabled = false;
+                const canTorch = !!qrScannerTrack?.getCapabilities?.().torch;
+                if (flashBtn) {
+                    flashBtn.style.display = canTorch ? 'flex' : 'none';
+                    flashBtn.classList.remove('active');
+                }
                 video.srcObject = qrScannerStream;
                 await video.play();
                 modal.classList.add('active');
@@ -1132,11 +1213,34 @@ sR2Sh8e3h3Knd6j1tceRIFU=
         function stopQrScanner() {
             if (qrScannerFrame) window.cancelAnimationFrame(qrScannerFrame);
             qrScannerFrame = 0;
+            if (qrScannerTrack && qrFlashEnabled) {
+                qrScannerTrack.applyConstraints({ advanced: [{ torch: false }] }).catch(() => { });
+            }
             if (qrScannerStream) qrScannerStream.getTracks().forEach(track => track.stop());
             qrScannerStream = null;
+            qrScannerTrack = null;
+            qrFlashEnabled = false;
+            const flashBtn = document.getElementById('qrFlashBtn');
+            if (flashBtn) {
+                flashBtn.style.display = 'none';
+                flashBtn.classList.remove('active');
+            }
             const video = document.getElementById('qrScannerVideo');
             if (video) video.srcObject = null;
             document.getElementById('qrScannerModal')?.classList.remove('active');
+        }
+
+        async function toggleQrFlash() {
+            if (!qrScannerTrack?.applyConstraints) return;
+            qrFlashEnabled = !qrFlashEnabled;
+            try {
+                await qrScannerTrack.applyConstraints({ advanced: [{ torch: qrFlashEnabled }] });
+                document.getElementById('qrFlashBtn')?.classList.toggle('active', qrFlashEnabled);
+            } catch (err) {
+                qrFlashEnabled = false;
+                console.warn('Khong bat duoc flash:', err);
+                showKiemKhoNotice('Camera nay khong ho tro flash.');
+            }
         }
 
         function hideProductSuggestions() {
@@ -1367,12 +1471,15 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                 if (currentTab === 'DS_SP' && header === 'qr') {
                     return `<label><span>${header}</span><div class="kiem-kho-qr-row"><input id="formField_${idx}" data-field="${header}" type="text" value="${value}" autocomplete="off" placeholder="Quet hoac nhap QR"><button type="button" class="kiem-kho-tool-btn" onclick="startQrScanner('DS_SP')" title="Mo camera quet QR"><i data-lucide="scan-line" style="width:18px;"></i></button></div></label>`;
                 }
+                if (header === 'anh') {
+                    return `<label class="image-upload-field"><span>${header}</span><div class="image-upload-row"><input id="formField_${idx}" data-field="${header}" type="url" value="${value}" placeholder="URL anh ImgBB"><button type="button" class="kiem-kho-tool-btn" onclick="document.getElementById('imageFile_${idx}').click()" title="Tai anh len ImgBB"><i data-lucide="image-up" style="width:18px;"></i></button><input id="imageFile_${idx}" type="file" accept="image/*" hidden onchange="handleImageUpload(this, ${idx})"></div><div id="imagePreview_${idx}" class="image-preview">${getImagePreviewHtml(rawValue)}</div></label>`;
+                }
                 if (header === 'ngay') {
                     return `<label><span>${header}</span><input id="formField_${idx}" data-field="${header}" type="date" value="${escapeHtml(toDateInputValue(rawValue))}"></label>`;
                 }
                 if (header === 'id_sp') {
                     if (currentTab === 'KIEM_KHO') {
-                        return `<div class="kiem-kho-product-tools"><label class="suggest-field product-suggest-field"><span>${header}</span><div class="kiem-kho-id-sp-row"><input id="formField_${idx}" data-field="${header}" type="text" value="${value}" autocomplete="off" oninput="updateProductName()" onfocus="updateProductSuggestions()" onblur="hideProductSuggestions()"><button type="button" class="kiem-kho-tool-btn" onclick="openDsSpProductFromKiemKho()" title="Sua san pham trong DS_SP"><i data-lucide="square-pen" style="width:18px;"></i></button></div><div id="productSuggest" class="suggest-panel product-suggest-panel"></div></label><label class="kiem-kho-qr-field"><span>qr</span><div class="kiem-kho-qr-row"><input id="kiemKhoQrInput" type="text" autocomplete="off" placeholder="Quet hoac nhap QR" oninput="handleKiemKhoQrInput(this)"><button type="button" class="kiem-kho-tool-btn" onclick="startQrScanner()" title="Mo camera quet QR"><i data-lucide="scan-line" style="width:18px;"></i></button></div></label></div>`;
+                        return `<div class="kiem-kho-product-tools"><label class="suggest-field product-suggest-field"><span>${header}</span><div class="kiem-kho-id-sp-row"><input id="formField_${idx}" data-field="${header}" type="text" value="${value}" autocomplete="off" oninput="updateProductName()" onfocus="updateProductSuggestions()" onblur="hideProductSuggestions()"><button type="button" class="kiem-kho-tool-btn" onclick="openDsSpProductFromKiemKho()" title="Sua san pham trong DS_SP"><i data-lucide="square-pen" style="width:18px;"></i></button></div><div id="productSuggest" class="suggest-panel product-suggest-panel"></div></label><label class="kiem-kho-qr-field"><span>qr</span><div class="kiem-kho-qr-row kiem-kho-qr-row-wide"><input id="kiemKhoQrInput" type="text" autocomplete="off" placeholder="Quet hoac nhap QR" oninput="handleKiemKhoQrInput(this)"><button type="button" class="kiem-kho-tool-btn" onclick="startQrScanner()" title="Mo camera quet QR"><i data-lucide="scan-line" style="width:18px;"></i></button><button type="button" class="kiem-kho-tool-btn" onclick="saveKiemKhoQrToDsSp()" title="Them ma vao DS_SP"><i data-lucide="barcode" style="width:18px;"></i></button></div></label></div>`;
                     }
                     return `<label><span>${header}</span><input id="formField_${idx}" data-field="${header}" type="text" value="${value}" list="productOptions" oninput="updateProductName()" onfocus="updateProductSuggestions()"><datalist id="productOptions">${renderProductOptions(String(rawValue || '').trim())}</datalist></label>`;
                 }
@@ -2024,7 +2131,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                     isReloadingForUpdate = true;
                     window.location.reload();
                 });
-                navigator.serviceWorker.register('./sw.js?v=13', { updateViaCache: 'none' })
+                navigator.serviceWorker.register('./sw.js?v=14', { updateViaCache: 'none' })
                     .then(registration => registration.update())
                     .catch(error => {
                         console.warn('Khong the dang ky service worker:', error);

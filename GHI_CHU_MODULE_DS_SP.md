@@ -169,7 +169,9 @@ Ung dung da ho tro PWA. Khi website duoc mo bang HTTPS, trinh duyet Android se h
 
 # QR san pham
 
-- Sheet `DS_SP` co thu tu cot: `id`, `ten_sp`, `ncc`, `ghi_chu`, `qr`.
+- Sheet `DS_SP` co thu tu cot: `id`, `ten_sp`, `ncc`, `ghi_chu`, `qr`, `anh`.
+- Sheet `KIEM_KHO` co thu tu cot: `id`, `ngay`, `id_sp`, `slg_ton`, `thuc_te`, `slg_lech`, `vi_tri`, `ghi_chu`, `anh`.
+- Truoc khi tai anh len ImgBB, can dien API key vao `CONFIG.imgbbApiKey` trong `app.js`.
 - Form `KIEM_KHO` co o QR ao. QR khong ghi them vao sheet `KIEM_KHO`; app dung QR de tra `DS_SP.qr` va dien `id_sp`.
 - Co the dung may quet cam tay de nhap vao o QR, hoac bam nut camera ben canh o QR tren dien thoai.
 - Nut sua ben canh `id_sp` mo module `DS_SP` va mo dung san pham dang chon.
@@ -181,3 +183,5 @@ Ung dung da ho tro PWA. Khi website duoc mo bang HTTPS, trinh duyet Android se h
 - Camera cung doc ma vach 1D thong dung: `EAN-13`, `EAN-8`, `UPC-A`, `UPC-E`, `Code 128`, `Code 39`, `ITF`, `Codabar`.
 - Tem hang hoa co 13 chu so nhu `8935259822795` la `EAN-13`. Luu day du 13 chu so nay vao cot `DS_SP.qr`.
 - Camera luon nhan va giu ma vua quet. Sau khi quet xong app moi tra `DS_SP.qr`: tim thay thi dien `id_sp`, chua tim thay thi van giu ma trong o QR de bo sung san pham sau.
+- Trong KIEM_KHO, nut ma vach ben canh o QR ghi nhanh ma dang co vao `DS_SP.qr` theo `id_sp`.
+- Camera hien nut flash khi thiet bi ho tro torch.
