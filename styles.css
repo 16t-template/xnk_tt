@@ -1134,6 +1134,10 @@
             gap: 8px;
         }
 
+        .image-upload-row-wide {
+            grid-template-columns: minmax(0, 1fr) 42px 42px;
+        }
+
         .image-preview {
             min-height: 0;
         }

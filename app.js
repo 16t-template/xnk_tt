@@ -1472,7 +1472,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                     return `<label><span>${header}</span><div class="kiem-kho-qr-row"><input id="formField_${idx}" data-field="${header}" type="text" value="${value}" autocomplete="off" placeholder="Quet hoac nhap QR"><button type="button" class="kiem-kho-tool-btn" onclick="startQrScanner('DS_SP')" title="Mo camera quet QR"><i data-lucide="scan-line" style="width:18px;"></i></button></div></label>`;
                 }
                 if (header === 'anh') {
-                    return `<label class="image-upload-field"><span>${header}</span><div class="image-upload-row"><input id="formField_${idx}" data-field="${header}" type="url" value="${value}" placeholder="URL anh ImgBB"><button type="button" class="kiem-kho-tool-btn" onclick="document.getElementById('imageFile_${idx}').click()" title="Tai anh len ImgBB"><i data-lucide="image-up" style="width:18px;"></i></button><input id="imageFile_${idx}" type="file" accept="image/*" hidden onchange="handleImageUpload(this, ${idx})"></div><div id="imagePreview_${idx}" class="image-preview">${getImagePreviewHtml(rawValue)}</div></label>`;
+                    return `<label class="image-upload-field"><span>${header}</span><div class="image-upload-row image-upload-row-wide"><input id="formField_${idx}" data-field="${header}" type="url" value="${value}" placeholder="URL anh ImgBB"><button type="button" class="kiem-kho-tool-btn" onclick="document.getElementById('imageFile_${idx}').click()" title="Tai anh len ImgBB"><i data-lucide="image-up" style="width:18px;"></i></button><button type="button" class="kiem-kho-tool-btn" onclick="document.getElementById('imageCamera_${idx}').click()" title="Chup anh"><i data-lucide="camera" style="width:18px;"></i></button><input id="imageFile_${idx}" type="file" accept="image/*" hidden onchange="handleImageUpload(this, ${idx})"><input id="imageCamera_${idx}" type="file" accept="image/*" capture="environment" hidden onchange="handleImageUpload(this, ${idx})"></div><div id="imagePreview_${idx}" class="image-preview">${getImagePreviewHtml(rawValue)}</div></label>`;
                 }
                 if (header === 'ngay') {
                     return `<label><span>${header}</span><input id="formField_${idx}" data-field="${header}" type="date" value="${escapeHtml(toDateInputValue(rawValue))}"></label>`;
@@ -2131,7 +2131,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                     isReloadingForUpdate = true;
                     window.location.reload();
                 });
-                navigator.serviceWorker.register('./sw.js?v=14', { updateViaCache: 'none' })
+                navigator.serviceWorker.register('./sw.js?v=15', { updateViaCache: 'none' })
                     .then(registration => registration.update())
                     .catch(error => {
                         console.warn('Khong the dang ky service worker:', error);

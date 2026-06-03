@@ -172,6 +172,7 @@ Ung dung da ho tro PWA. Khi website duoc mo bang HTTPS, trinh duyet Android se h
 - Sheet `DS_SP` co thu tu cot: `id`, `ten_sp`, `ncc`, `ghi_chu`, `qr`, `anh`.
 - Sheet `KIEM_KHO` co thu tu cot: `id`, `ngay`, `id_sp`, `slg_ton`, `thuc_te`, `slg_lech`, `vi_tri`, `ghi_chu`, `anh`.
 - Truoc khi tai anh len ImgBB, can dien API key vao `CONFIG.imgbbApiKey` trong `app.js`.
+- Truong `anh` co 2 nut: tai anh co san va chup anh bang camera dien thoai. Sau khi chon/chup, anh duoc upload len ImgBB va luu URL vao sheet.
 - Form `KIEM_KHO` co o QR ao. QR khong ghi them vao sheet `KIEM_KHO`; app dung QR de tra `DS_SP.qr` va dien `id_sp`.
 - Co the dung may quet cam tay de nhap vao o QR, hoac bam nut camera ben canh o QR tren dien thoai.
 - Nut sua ben canh `id_sp` mo module `DS_SP` va mo dung san pham dang chon.
