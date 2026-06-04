@@ -76,6 +76,14 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                     hiddenCols: [0],
                     priceCols: [],
                     imgCol: 8
+                },
+                'ANH_DON_HANG': {
+                    headers: ['id_sp', 'slg', 'ten_sp'],
+                    hiddenCols: [],
+                    priceCols: [],
+                    imgCol: -1,
+                    readOnly: true,
+                    localOnly: true
                 }
             }
         };
@@ -92,7 +100,8 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             BC_XUAT_KHO: 'BC_XUAT_KHO',
             NHAP_KHO: 'NHAP_KHO',
             TON_KHO: 'TON_KHO',
-            KIEM_KHO: 'KIEM_KHO'
+            KIEM_KHO: 'KIEM_KHO',
+            ANH_DON_HANG: 'ANH_DON_HANG'
         };
         const ID_PREFIXES = {
             DS_SP: 'SP',
@@ -100,7 +109,8 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             BC_XUAT_KHO: 'BCXK',
             NHAP_KHO: 'NK',
             TON_KHO: 'TK',
-            KIEM_KHO: 'KK'
+            KIEM_KHO: 'KK',
+            ANH_DON_HANG: 'ADH'
         };
         const DEFAULT_ENUMS = {
             vi_tri: ['Kho', 'Ke', 'Quay', 'Cho xu ly']
@@ -121,6 +131,8 @@ sR2Sh8e3h3Knd6j1tceRIFU=
         const KIEM_KHO_PENDING_KEY = 'xnkTtKiemKhoPending';
         const DS_SP_HISTORY_CACHE_KEY = 'xnkTtDsSpHistory';
         const DS_SP_PENDING_KEY = 'xnkTtDsSpPending';
+        const CURRENT_USER_STORAGE_KEY = 'xnkTtCurrentUser';
+        const ADMIN_USER_STORAGE_KEY = 'xnkTtAdminUser';
         let isSyncingKiemKho = false;
         let isSyncingDsSp = false;
         let qrScannerStream = null;
@@ -235,7 +247,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
         }
 
         function getRowsPerPageForTab(tabName) {
-            return ['XUAT_KHO', 'BC_XUAT_KHO', 'NHAP_KHO', 'TON_KHO', 'KIEM_KHO'].includes(tabName)
+            return ['XUAT_KHO', 'BC_XUAT_KHO', 'NHAP_KHO', 'TON_KHO', 'KIEM_KHO', 'ANH_DON_HANG'].includes(tabName)
                 ? WAREHOUSE_PAGE_SIZE
                 : DEFAULT_PAGE_SIZE;
         }
@@ -269,8 +281,15 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             const addBtn = document.getElementById('addBtn');
             const isReadOnly = !!CONFIG.tabs[currentTab].readOnly;
             if (uploadBtn) {
-                uploadBtn.innerHTML = `<i data-lucide="upload" style="width:18px;"></i> Tai ${currentTab} Len`;
-                uploadBtn.style.display = isReadOnly ? 'none' : 'flex';
+                if (currentTab === 'ANH_DON_HANG') {
+                    uploadBtn.innerHTML = `<i data-lucide="camera" style="width:18px;"></i> Chup/Tai anh`;
+                    uploadBtn.style.display = 'flex';
+                    uploadBtn.onclick = () => document.getElementById('orderImageInput')?.click();
+                } else {
+                    uploadBtn.innerHTML = `<i data-lucide="upload" style="width:18px;"></i> Tai ${currentTab} Len`;
+                    uploadBtn.style.display = isReadOnly ? 'none' : 'flex';
+                    uploadBtn.onclick = () => document.getElementById('fileInput')?.click();
+                }
                 lucide.createIcons();
             }
             if (addBtn) addBtn.style.display = isReadOnly ? 'none' : 'flex';
@@ -329,6 +348,14 @@ sR2Sh8e3h3Knd6j1tceRIFU=
 
         async function fetchData() {
             document.getElementById('loading').style.display = 'flex';
+            if (currentTab === 'ANH_DON_HANG') {
+                allData = allData || [];
+                filteredData = [...allData];
+                renderHeaders();
+                renderTable();
+                document.getElementById('loading').style.display = 'none';
+                return;
+            }
             if (currentTab === 'DS_SP' && !navigator.onLine) {
                 hydrateDsSpCache();
                 populateFilters();
@@ -408,6 +435,10 @@ sR2Sh8e3h3Knd6j1tceRIFU=
         function renderHeaders() {
             const head = document.getElementById('tableHead');
             const tabConfig = CONFIG.tabs[currentTab];
+            if (currentTab === 'ANH_DON_HANG') {
+                head.innerHTML = `<tr>${tabConfig.headers.map(h => `<th>${h}</th>`).join('')}</tr>`;
+                return;
+            }
             if (isMobileXuatKhoView()) {
                 head.innerHTML = '<tr><th>XUAT_KHO</th></tr>';
                 return;
@@ -511,9 +542,9 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             currentUser = employee;
             if (isDirectLogin && String(employee?.quyen || '').trim().toUpperCase() === 'ADMIN') {
                 adminSessionUser = employee;
-                try { sessionStorage.setItem('xnkTtAdminUser', JSON.stringify(employee)); } catch (_) { }
+                writeLocalJson(ADMIN_USER_STORAGE_KEY, employee);
             }
-            try { sessionStorage.setItem('xnkTtCurrentUser', JSON.stringify(employee)); } catch (_) { }
+            writeLocalJson(CURRENT_USER_STORAGE_KEY, employee);
             await loadEmployees().catch(() => []);
             showAuthenticatedApp();
         }
@@ -560,8 +591,10 @@ sR2Sh8e3h3Knd6j1tceRIFU=
         function logout() {
             currentUser = null;
             adminSessionUser = null;
-            try { sessionStorage.removeItem('xnkTtCurrentUser'); } catch (_) { }
-            try { sessionStorage.removeItem('xnkTtAdminUser'); } catch (_) { }
+            try { localStorage.removeItem(CURRENT_USER_STORAGE_KEY); } catch (_) { }
+            try { localStorage.removeItem(ADMIN_USER_STORAGE_KEY); } catch (_) { }
+            try { sessionStorage.removeItem(CURRENT_USER_STORAGE_KEY); } catch (_) { }
+            try { sessionStorage.removeItem(ADMIN_USER_STORAGE_KEY); } catch (_) { }
             document.body.classList.remove('is-authenticated');
             document.getElementById('loginPassword').value = '';
             renderAdminAccountSwitcher();
@@ -1530,6 +1563,73 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                 </section>`;
         }
 
+        function normalizeOcrText(value) {
+            return String(value || '').toUpperCase().replace(/\s+/g, '').replace(/[–—]/g, '-');
+        }
+
+        function findQuantityNearProduct(line, productId) {
+            const rawLine = String(line || '');
+            const compactLine = normalizeOcrText(rawLine);
+            const compactId = normalizeOcrText(productId);
+            const idPos = compactLine.indexOf(compactId);
+            const numbers = rawLine.match(/\d+/g) || [];
+            if (!numbers.length) return '';
+            const idDigits = productId.match(/\d+/g) || [];
+            const filtered = numbers.filter(num => !idDigits.includes(num) && Number(num) < 10000);
+            if (filtered.length) return filtered[filtered.length - 1];
+            return '';
+        }
+
+        function parseOrderImageText(text) {
+            const lines = String(text || '').split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+            const normalizedText = normalizeOcrText(text);
+            const found = new Map();
+            productCatalog.forEach(product => {
+                const id = String(product.id || '').trim();
+                if (!id) return;
+                const normalizedId = normalizeOcrText(id);
+                if (!normalizedId || !normalizedText.includes(normalizedId)) return;
+                const matchedLine = lines.find(line => normalizeOcrText(line).includes(normalizedId)) || '';
+                const slg = findQuantityNearProduct(matchedLine, id);
+                found.set(id, [id, slg, product.ten_sp || '']);
+            });
+            return [...found.values()];
+        }
+
+        async function handleOrderImageUpload(event) {
+            const file = event.target?.files?.[0];
+            if (!file) return;
+            event.target.value = '';
+            if (!window.Tesseract?.recognize) {
+                alert('Chua tai duoc thu vien OCR Tesseract. Hay kiem tra mang va tai lai trang.');
+                return;
+            }
+            document.getElementById('loading').style.display = 'flex';
+            document.querySelector('#loading p').innerText = 'Dang doc du lieu tu anh...';
+            try {
+                hydrateDsSpCache();
+                const result = await Tesseract.recognize(file, 'eng+vie', {
+                    logger: message => {
+                        if (message.status && typeof message.progress === 'number') {
+                            document.querySelector('#loading p').innerText = `Dang OCR: ${message.status} ${Math.round(message.progress * 100)}%`;
+                        }
+                    }
+                });
+                const rows = parseOrderImageText(result.data?.text || '');
+                allData = rows;
+                filteredData = [...allData];
+                currentPage = 1;
+                renderHeaders();
+                renderTable();
+                showKiemKhoNotice(rows.length ? `Da doc ${rows.length} dong san pham.` : 'Khong nhan ra id_sp nao trong anh.');
+            } catch (err) {
+                console.error(err);
+                alert('Khong doc duoc anh don hang: ' + err.message);
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
         function renderFormFields(row = null) {
             const container = document.getElementById('formFields');
             const headers = getStorageHeaders();
@@ -1872,8 +1972,10 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             try { saved = sessionStorage.getItem(XNK_TT_TAB_STORAGE_KEY) || ''; } catch (_) { }
             currentTab = CONFIG.tabs[saved] ? saved : 'DS_SP';
             try {
-                const savedUser = JSON.parse(sessionStorage.getItem('xnkTtCurrentUser') || 'null');
-                const savedAdmin = JSON.parse(sessionStorage.getItem('xnkTtAdminUser') || 'null');
+                const savedUser = readLocalJson(CURRENT_USER_STORAGE_KEY, null)
+                    || JSON.parse(sessionStorage.getItem(CURRENT_USER_STORAGE_KEY) || 'null');
+                const savedAdmin = readLocalJson(ADMIN_USER_STORAGE_KEY, null)
+                    || JSON.parse(sessionStorage.getItem(ADMIN_USER_STORAGE_KEY) || 'null');
                 if (savedAdmin && savedAdmin.id) adminSessionUser = savedAdmin;
                 if (savedUser && savedUser.id) {
                     await setCurrentUser(savedUser);
@@ -2029,6 +2131,12 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             const start = (currentPage - 1) * rowsPerPage;
             const end = start + rowsPerPage;
             const pageData = filteredData.slice(start, end);
+
+            if (currentTab === 'ANH_DON_HANG' && !pageData.length) {
+                tbody.innerHTML = '<tr><td colspan="3" class="empty-order-image">Bam "Chup/Tai anh" de doc anh don hang.</td></tr>';
+                renderPagination();
+                return;
+            }
 
             if (isMobileXuatKhoView()) {
                 tbody.innerHTML = pageData.map((row, rowIndex) => `<tr>${renderMobileXuatKhoCard(row, start + rowIndex)}</tr>`).join('');
@@ -2296,7 +2404,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                     isReloadingForUpdate = true;
                     window.location.reload();
                 });
-                navigator.serviceWorker.register('./sw.js?v=17', { updateViaCache: 'none' })
+                navigator.serviceWorker.register('./sw.js?v=20', { updateViaCache: 'none' })
                     .then(registration => registration.update())
                     .catch(error => {
                         console.warn('Khong the dang ky service worker:', error);

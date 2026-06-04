@@ -171,6 +171,16 @@ Ung dung da ho tro PWA. Khi website duoc mo bang HTTPS, trinh duyet Android se h
 - Dong them/sua duoc luu tren may, hien ngay tren bang va dua vao hang doi dong bo.
 - Khi co mang lai, app tu dong bo `DS_SP` len Sheet theo `id`: id da co thi cap nhat, id chua co thi them dong.
 - Cache DS_SP cung duoc dung cho tra ma QR/ma vach trong KIEM_KHO.
+
+# ANH_DON_HANG
+
+- Module `ANH_DON_HANG` khong lay du lieu tu sheet nao ca.
+- Module cho phep chup hoac tai 1 anh don hang len de OCR.
+- App dung Tesseract.js tren trinh duyet de doc chu trong anh, sau do tim `id_sp` theo cache `DS_SP` dang co tren may.
+- Ket qua hien thanh bang nhu Excel voi cot `id_sp`, `slg`, `ten_sp`.
+- `ten_sp` lay theo `id_sp` tu DS_SP cache. Neu may chua co cache DS_SP thi van hien `id_sp`, cot `ten_sp` co the de trong.
+- Do chinh xac phu thuoc anh ro, thang, du sang va ma san pham trong anh phai doc duoc.
+- OCR can mang lan dau de tai thu vien Tesseract.js.
 - PWA khoa huong man hinh `portrait-primary` de giu giao dien dien thoai theo chieu doc.
 - Khi chay trong trinh duyet web thong thuong, he dieu hanh co the khong cho website khoa xoay. Ban cai tren man hinh chinh ap dung on dinh hon.
 

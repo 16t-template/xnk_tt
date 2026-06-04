@@ -744,6 +744,13 @@
             color: #64748b;
         }
 
+        .empty-order-image {
+            padding: 28px !important;
+            text-align: center;
+            color: #64748b;
+            font-weight: 700;
+        }
+
         .modal-mask {
             position: fixed;
             inset: 0;
