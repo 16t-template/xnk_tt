@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="XNK TT">
     <title>XNK TT - Danh sach san pham</title>
-    <link rel="manifest" href="manifest.webmanifest?v=25">
+    <link rel="manifest" href="manifest.webmanifest?v=27">
     <link rel="icon" href="icons/xnk-tt.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="icons/xnk-tt-192.png">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jsrsasign/10.5.25/jsrsasign-all-min.js"></script>
@@ -18,7 +18,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=25">
+    <link rel="stylesheet" href="styles.css?v=27">
 </head>
 
 <body>
@@ -149,7 +149,7 @@
                     <input id="idSpFilter" class="filter-input module-filter" type="text" list="filterIdSpOptions"
                         placeholder="Loc id_sp..." oninput="filterTable()">
 
-                    <button id="reloadBtn" type="button" onclick="reloadCurrentTab()">
+                    <button id="reloadBtn" type="button" onclick="reloadApp()">
                         <i data-lucide="refresh-cw" style="width:18px;"></i> Load lai
                     </button>
                     <button id="uploadBtn" onclick="document.getElementById('fileInput').click()">
@@ -240,7 +240,7 @@
     <datalist id="partnerFilterOptions"></datalist>
     <datalist id="idDonFilterOptions"></datalist>
     <datalist id="filterIdSpOptions"></datalist>
-    <script src="app.js?v=25"></script>
+    <script src="app.js?v=27"></script>
 </body>
 
 </html>

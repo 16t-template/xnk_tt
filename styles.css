@@ -1196,6 +1196,12 @@
             background: #f8fafc;
         }
 
+        .qr-missing-cell {
+            background: #dcfce7;
+            color: #166534;
+            font-weight: 800;
+        }
+
         .vi-tri-buttons {
             display: flex;
             flex-wrap: wrap;
@@ -1247,7 +1253,7 @@
 
         .column-setting-row {
             display: grid;
-            grid-template-columns: 1fr 90px;
+            grid-template-columns: 34px 1fr;
             gap: 10px;
             align-items: center;
             border: 1px solid var(--border);
@@ -1256,9 +1262,40 @@
             background: #fff;
         }
 
+        .column-setting-row[draggable="true"] {
+            cursor: grab;
+        }
+
+        .column-setting-row.dragging {
+            opacity: 0.55;
+            border-color: var(--primary);
+            box-shadow: 0 10px 24px rgba(79, 70, 229, 0.16);
+        }
+
+        .column-setting-row.drag-over {
+            background: #eef2ff;
+        }
+
         .column-setting-row.locked {
             opacity: 0.55;
             background: #f8fafc;
+        }
+
+        .drag-handle {
+            width: 30px;
+            height: 30px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: #f8fafc;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: grab;
+        }
+
+        .drag-handle:disabled {
+            cursor: not-allowed;
         }
 
         .column-setting-row label {
@@ -1268,14 +1305,6 @@
             font-size: 0.9rem;
             font-weight: 700;
             color: #334155;
-        }
-
-        .column-setting-row input[type="number"] {
-            width: 100%;
-            padding: 8px 9px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            font-weight: 700;
         }
 
         .secondary-btn,

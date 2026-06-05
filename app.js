@@ -528,19 +528,58 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             if (!list || !tabConfig) return;
             const baseHidden = getHiddenColsForCurrentView();
             const visibleCols = getVisibleColumnIndexes();
-            const positionByIdx = new Map(visibleCols.map((idx, order) => [idx, order + 1]));
-            list.innerHTML = tabConfig.headers.map((header, idx) => {
+            const orderedIndexes = [
+                ...visibleCols,
+                ...tabConfig.headers.map((_, idx) => idx).filter(idx => !visibleCols.includes(idx))
+            ];
+            list.innerHTML = orderedIndexes.map((idx) => {
+                const header = tabConfig.headers[idx];
                 const locked = baseHidden.includes(idx);
                 const checked = !locked && visibleCols.includes(idx);
-                const position = positionByIdx.get(idx) || '';
-                return `<div class="column-setting-row ${locked ? 'locked' : ''}">
+                return `<div class="column-setting-row ${locked ? 'locked' : ''}" data-column-row="${idx}" draggable="${locked ? 'false' : 'true'}">
+                    <button type="button" class="drag-handle" ${locked ? 'disabled' : ''} title="Keo tha doi vi tri">
+                        <i data-lucide="grip-vertical" style="width:18px;"></i>
+                    </button>
                     <label>
                         <input type="checkbox" data-column-visible="${idx}" ${checked ? 'checked' : ''} ${locked ? 'disabled' : ''}>
                         <span>${escapeHtml(header)}</span>
                     </label>
-                    <input type="number" min="1" step="1" data-column-position="${idx}" value="${escapeHtml(position)}" ${locked ? 'disabled' : ''} placeholder="-">
                 </div>`;
             }).join('');
+            initColumnSettingsDrag();
+            lucide.createIcons();
+        }
+
+        function initColumnSettingsDrag() {
+            const list = document.getElementById('columnSettingsList');
+            if (!list) return;
+            let dragged = null;
+            list.querySelectorAll('.column-setting-row[draggable="true"]').forEach(row => {
+                row.addEventListener('dragstart', event => {
+                    dragged = row;
+                    row.classList.add('dragging');
+                    event.dataTransfer.effectAllowed = 'move';
+                    event.dataTransfer.setData('text/plain', row.dataset.columnRow || '');
+                });
+                row.addEventListener('dragend', () => {
+                    row.classList.remove('dragging');
+                    dragged = null;
+                    list.querySelectorAll('.drag-over').forEach(item => item.classList.remove('drag-over'));
+                });
+                row.addEventListener('dragover', event => {
+                    event.preventDefault();
+                    if (!dragged || dragged === row) return;
+                    row.classList.add('drag-over');
+                    const rect = row.getBoundingClientRect();
+                    const after = event.clientY > rect.top + rect.height / 2;
+                    list.insertBefore(dragged, after ? row.nextSibling : row);
+                });
+                row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
+                row.addEventListener('drop', event => {
+                    event.preventDefault();
+                    row.classList.remove('drag-over');
+                });
+            });
         }
 
         function saveColumnSettings(event) {
@@ -550,23 +589,19 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             const baseHidden = getHiddenColsForCurrentView();
             const rows = [...document.querySelectorAll('.column-setting-row')];
             const visible = {};
-            const ordered = [];
-            rows.forEach((row, naturalOrder) => {
+            const order = [];
+            rows.forEach((row) => {
                 const checkbox = row.querySelector('[data-column-visible]');
-                const positionInput = row.querySelector('[data-column-position]');
                 const idx = Number(checkbox?.dataset.columnVisible);
                 if (!Number.isInteger(idx) || baseHidden.includes(idx)) return;
                 const isVisible = !!checkbox.checked;
                 visible[idx] = isVisible;
-                if (!isVisible) return;
-                const position = Number(positionInput?.value || 9999);
-                ordered.push({ idx, position: Number.isFinite(position) ? position : 9999, naturalOrder });
+                if (isVisible) order.push(idx);
             });
-            ordered.sort((a, b) => a.position - b.position || a.naturalOrder - b.naturalOrder);
             const settings = getColumnSettingsMap();
             settings[currentTab] = {
                 visible,
-                order: ordered.map(item => item.idx)
+                order
             };
             setColumnSettingsMap(settings);
             closeColumnSettings();
@@ -1280,6 +1315,13 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             const value = String(qrValue || '').trim();
             if (!value) return null;
             return productCatalog.find(item => String(item.qr || '').trim() === value) || null;
+        }
+
+        function isQrMissingInDsSp(qrValue) {
+            const value = String(qrValue || '').trim();
+            if (!value) return false;
+            if (!productCatalog.length) hydrateKiemKhoCaches();
+            return !getProductByQr(value);
         }
 
         function applyKiemKhoQr(rawValue) {
@@ -2372,6 +2414,9 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                         return `<td class="price-cell">${formatCurrency(cell)}</td>`;
                     }
                     const cellStr = String(cell || '').trim();
+                    if (currentTab === 'KIEM_KHO' && header === 'qr' && isQrMissingInDsSp(cellStr)) {
+                        return `<td class="qr-missing-cell">${escapeHtml(cellStr)}</td>`;
+                    }
                     if (cellStr.startsWith('http://') || cellStr.startsWith('https://')) {
                         const parts = cellStr.split(',');
                         const linksHtml = parts.map((l, i) => `<a href="${l.trim()}" target="_blank" style="color: var(--primary); font-weight: 600; text-decoration: none;">Link ${parts.length > 1 ? i + 1 : ''}</a>`.trim());
@@ -2600,7 +2645,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                     isReloadingForUpdate = true;
                     window.location.reload();
                 });
-                navigator.serviceWorker.register('./sw.js?v=25', { updateViaCache: 'none' })
+                navigator.serviceWorker.register('./sw.js?v=27', { updateViaCache: 'none' })
                     .then(registration => registration.update())
                     .catch(error => {
                         console.warn('Khong the dang ky service worker:', error);
