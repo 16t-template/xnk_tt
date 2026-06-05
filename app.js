@@ -73,7 +73,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                 'KIEM_KHO': {
                     range: 'KIEM_KHO!A2:J',
                     headers: ['id', 'ngay', 'id_sp', 'slg_ton', 'thuc_te', 'slg_lech', 'vi_tri', 'ghi_chu', 'anh', 'qr'],
-                    hiddenCols: [0, 9],
+                    hiddenCols: [0],
                     priceCols: [],
                     imgCol: 8
                 },
@@ -1162,7 +1162,11 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             const panel = document.getElementById('productSuggest');
             if (input) input.value = id;
             if (panel) panel.classList.remove('active');
-            updateProductName(true, false);
+            if (currentTab === 'KIEM_KHO') {
+                handleKiemKhoIdSpInput(false);
+            } else {
+                updateProductName(true, false);
+            }
         }
 
         function getProductByQr(qrValue) {
@@ -1193,13 +1197,17 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             showKiemKhoNotice('Da nhan QR va dien id_sp.');
         }
 
-        function handleKiemKhoIdSpInput() {
-            updateProductName();
+        function handleKiemKhoIdSpInput(showSuggestions = true) {
+            updateProductName(true, showSuggestions);
             const idSp = document.querySelector('[data-field="id_sp"]')?.value.trim() || '';
             const qrInput = document.querySelector('[data-field="qr"]');
-            if (!idSp || !qrInput || qrInput.value.trim()) return;
+            if (!qrInput) return;
+            if (!idSp) {
+                qrInput.value = '';
+                return;
+            }
             const product = productCatalog.find(item => item.id === idSp);
-            if (product?.qr) qrInput.value = product.qr;
+            qrInput.value = product?.qr || '';
         }
 
         async function openDsSpProductFromKiemKho() {
@@ -2485,7 +2493,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                     isReloadingForUpdate = true;
                     window.location.reload();
                 });
-                navigator.serviceWorker.register('./sw.js?v=21', { updateViaCache: 'none' })
+                navigator.serviceWorker.register('./sw.js?v=23', { updateViaCache: 'none' })
                     .then(registration => registration.update())
                     .catch(error => {
                         console.warn('Khong the dang ky service worker:', error);
