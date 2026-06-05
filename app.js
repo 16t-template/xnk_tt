@@ -133,6 +133,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
         const DS_SP_PENDING_KEY = 'xnkTtDsSpPending';
         const CURRENT_USER_STORAGE_KEY = 'xnkTtCurrentUser';
         const ADMIN_USER_STORAGE_KEY = 'xnkTtAdminUser';
+        const COLUMN_SETTINGS_STORAGE_KEY = 'xnkTtColumnSettings';
         let isSyncingKiemKho = false;
         let isSyncingDsSp = false;
         let qrScannerStream = null;
@@ -346,6 +347,10 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             filterTable();
         }
 
+        function reloadApp() {
+            window.location.reload();
+        }
+
         async function fetchData() {
             document.getElementById('loading').style.display = 'flex';
             if (currentTab === 'ANH_DON_HANG') {
@@ -436,15 +441,14 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             const head = document.getElementById('tableHead');
             const tabConfig = CONFIG.tabs[currentTab];
             if (currentTab === 'ANH_DON_HANG') {
-                head.innerHTML = `<tr>${tabConfig.headers.map(h => `<th>${h}</th>`).join('')}</tr>`;
+                head.innerHTML = `<tr>${getVisibleColumnIndexes().map(idx => `<th>${tabConfig.headers[idx]}</th>`).join('')}</tr>`;
                 return;
             }
             if (isMobileXuatKhoView()) {
                 head.innerHTML = '<tr><th>XUAT_KHO</th></tr>';
                 return;
             }
-            const hiddenCols = getHiddenColsForCurrentView();
-            head.innerHTML = `<tr>${tabConfig.headers.map((h, idx) => hiddenCols.includes(idx) ? '' : `<th>${h}</th>`).join('')}</tr>`;
+            head.innerHTML = `<tr>${getVisibleColumnIndexes().map(idx => `<th>${tabConfig.headers[idx]}</th>`).join('')}</tr>`;
         }
 
         function getCurrentUserRole() {
@@ -474,6 +478,109 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             return tabConfig.headers
                 .map((header, idx) => visibleHeaders.includes(header) ? -1 : idx)
                 .filter(idx => idx >= 0);
+        }
+
+        function getColumnSettingsMap() {
+            const value = readLocalJson(COLUMN_SETTINGS_STORAGE_KEY, {});
+            return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+        }
+
+        function setColumnSettingsMap(map) {
+            writeLocalJson(COLUMN_SETTINGS_STORAGE_KEY, map || {});
+        }
+
+        function getVisibleColumnIndexes(tabName = currentTab) {
+            const tabConfig = CONFIG.tabs[tabName];
+            const headers = tabConfig.headers || [];
+            const baseHidden = tabName === currentTab ? getHiddenColsForCurrentView() : (tabConfig.hiddenCols || []);
+            const defaults = headers.map((_, idx) => idx).filter(idx => !baseHidden.includes(idx));
+            const settings = getColumnSettingsMap()[tabName];
+            if (!settings || !Array.isArray(settings.order)) return defaults;
+            const visible = settings.visible && typeof settings.visible === 'object' ? settings.visible : {};
+            const seen = new Set();
+            const ordered = settings.order
+                .map(Number)
+                .filter(idx => Number.isInteger(idx) && idx >= 0 && idx < headers.length && !baseHidden.includes(idx))
+                .filter(idx => {
+                    if (seen.has(idx)) return false;
+                    seen.add(idx);
+                    return visible[idx] !== false;
+                });
+            defaults.forEach(idx => {
+                if (!seen.has(idx) && visible[idx] !== false) ordered.push(idx);
+            });
+            return ordered;
+        }
+
+        function openColumnSettings() {
+            renderColumnSettingsList();
+            document.getElementById('columnSettingsModal')?.classList.add('active');
+            lucide.createIcons();
+        }
+
+        function closeColumnSettings() {
+            document.getElementById('columnSettingsModal')?.classList.remove('active');
+        }
+
+        function renderColumnSettingsList() {
+            const list = document.getElementById('columnSettingsList');
+            const tabConfig = CONFIG.tabs[currentTab];
+            if (!list || !tabConfig) return;
+            const baseHidden = getHiddenColsForCurrentView();
+            const visibleCols = getVisibleColumnIndexes();
+            const positionByIdx = new Map(visibleCols.map((idx, order) => [idx, order + 1]));
+            list.innerHTML = tabConfig.headers.map((header, idx) => {
+                const locked = baseHidden.includes(idx);
+                const checked = !locked && visibleCols.includes(idx);
+                const position = positionByIdx.get(idx) || '';
+                return `<div class="column-setting-row ${locked ? 'locked' : ''}">
+                    <label>
+                        <input type="checkbox" data-column-visible="${idx}" ${checked ? 'checked' : ''} ${locked ? 'disabled' : ''}>
+                        <span>${escapeHtml(header)}</span>
+                    </label>
+                    <input type="number" min="1" step="1" data-column-position="${idx}" value="${escapeHtml(position)}" ${locked ? 'disabled' : ''} placeholder="-">
+                </div>`;
+            }).join('');
+        }
+
+        function saveColumnSettings(event) {
+            event.preventDefault();
+            const tabConfig = CONFIG.tabs[currentTab];
+            if (!tabConfig) return;
+            const baseHidden = getHiddenColsForCurrentView();
+            const rows = [...document.querySelectorAll('.column-setting-row')];
+            const visible = {};
+            const ordered = [];
+            rows.forEach((row, naturalOrder) => {
+                const checkbox = row.querySelector('[data-column-visible]');
+                const positionInput = row.querySelector('[data-column-position]');
+                const idx = Number(checkbox?.dataset.columnVisible);
+                if (!Number.isInteger(idx) || baseHidden.includes(idx)) return;
+                const isVisible = !!checkbox.checked;
+                visible[idx] = isVisible;
+                if (!isVisible) return;
+                const position = Number(positionInput?.value || 9999);
+                ordered.push({ idx, position: Number.isFinite(position) ? position : 9999, naturalOrder });
+            });
+            ordered.sort((a, b) => a.position - b.position || a.naturalOrder - b.naturalOrder);
+            const settings = getColumnSettingsMap();
+            settings[currentTab] = {
+                visible,
+                order: ordered.map(item => item.idx)
+            };
+            setColumnSettingsMap(settings);
+            closeColumnSettings();
+            renderHeaders();
+            renderTable();
+        }
+
+        function resetColumnSettings() {
+            const settings = getColumnSettingsMap();
+            delete settings[currentTab];
+            setColumnSettingsMap(settings);
+            closeColumnSettings();
+            renderHeaders();
+            renderTable();
         }
 
         function normalizeRow(row) {
@@ -2222,7 +2329,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             const pageData = filteredData.slice(start, end);
 
             if (currentTab === 'ANH_DON_HANG' && !pageData.length) {
-                tbody.innerHTML = '<tr><td colspan="3" class="empty-order-image">Bam "Chup/Tai anh" de doc anh don hang.</td></tr>';
+                tbody.innerHTML = `<tr><td colspan="${getVisibleColumnIndexes().length || 1}" class="empty-order-image">Bam "Chup/Tai anh" de doc anh don hang.</td></tr>`;
                 renderPagination();
                 return;
             }
@@ -2241,10 +2348,9 @@ sR2Sh8e3h3Knd6j1tceRIFU=
 
             tbody.innerHTML = pageData.map((row, rowIndex) => {
                 const absoluteRowIndex = start + rowIndex;
-                const hiddenCols = getHiddenColsForCurrentView();
-                const cells = tabConfig.headers.map((_, idx) => {
+                const visibleCols = getVisibleColumnIndexes();
+                const cells = visibleCols.map((idx) => {
                     const cell = row[idx] || '';
-                    if (hiddenCols.includes(idx)) return '';
                     const header = tabConfig.headers[idx];
                     if (isKhoXuatKhoView() && header === 'slg_nhat') {
                         return `<td><input class="inline-number-input" type="text" inputmode="numeric" value="${escapeHtml(formatNumber(cell))}" onclick="event.stopPropagation()" ondblclick="event.stopPropagation()" oninput="formatNumberInput(this)" onchange="saveKhoInlineValue(${absoluteRowIndex}, 'slg_nhat', this.value)"></td>`;
@@ -2467,6 +2573,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             if (screen.orientation?.lock) {
                 screen.orientation.lock('portrait-primary').catch(() => { });
             }
+            initPullToReloadApp();
             window.addEventListener('online', syncPendingKiemKho);
             window.addEventListener('online', syncPendingDsSp);
             window.addEventListener('resize', () => {
@@ -2493,7 +2600,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                     isReloadingForUpdate = true;
                     window.location.reload();
                 });
-                navigator.serviceWorker.register('./sw.js?v=23', { updateViaCache: 'none' })
+                navigator.serviceWorker.register('./sw.js?v=25', { updateViaCache: 'none' })
                     .then(registration => registration.update())
                     .catch(error => {
                         console.warn('Khong the dang ky service worker:', error);
@@ -2501,6 +2608,31 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             }
             window.setTimeout(syncPendingKiemKho, 0);
             window.setTimeout(syncPendingDsSp, 0);
+        }
+
+        function initPullToReloadApp() {
+            let startY = 0;
+            let pulling = false;
+            let triggered = false;
+            window.addEventListener('touchstart', event => {
+                if (!isMobileLayout() || window.scrollY > 0) return;
+                startY = event.touches[0]?.clientY || 0;
+                pulling = startY > 0;
+                triggered = false;
+            }, { passive: true });
+            window.addEventListener('touchmove', event => {
+                if (!pulling || triggered || !isMobileLayout()) return;
+                const currentY = event.touches[0]?.clientY || 0;
+                const delta = currentY - startY;
+                if (delta > 95 && window.scrollY <= 0) {
+                    triggered = true;
+                    document.body.classList.add('pull-reloading');
+                    window.setTimeout(reloadApp, 80);
+                }
+            }, { passive: true });
+            window.addEventListener('touchend', () => {
+                pulling = false;
+            }, { passive: true });
         }
 
         initializeMobileApp();

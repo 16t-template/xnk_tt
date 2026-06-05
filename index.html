@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="XNK TT">
     <title>XNK TT - Danh sach san pham</title>
-    <link rel="manifest" href="manifest.webmanifest?v=23">
+    <link rel="manifest" href="manifest.webmanifest?v=25">
     <link rel="icon" href="icons/xnk-tt.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="icons/xnk-tt-192.png">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jsrsasign/10.5.25/jsrsasign-all-min.js"></script>
@@ -18,7 +18,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=23">
+    <link rel="stylesheet" href="styles.css?v=25">
 </head>
 
 <body>
@@ -63,7 +63,7 @@
                 <span id="mobileTabTitle">DS_SP</span>
             </div>
         </div>
-        <button class="mobile-reload-btn" type="button" onclick="reloadCurrentTab()" title="Load lai">
+        <button class="mobile-reload-btn" type="button" onclick="reloadApp()" title="Load lai app">
             <i data-lucide="refresh-cw" style="width:20px;"></i>
         </button>
         <button id="installAppBtn" class="mobile-install-btn" type="button" onclick="installMobileApp()" title="Cai app">
@@ -158,6 +158,9 @@
                     <button id="addBtn" type="button" onclick="openRecordForm()">
                         <i data-lucide="plus" style="width:18px;"></i> Them moi
                     </button>
+                    <button id="columnSettingsBtn" type="button" class="secondary-tool-btn" onclick="openColumnSettings()" title="Cai dat cot">
+                        <i data-lucide="columns-3" style="width:18px;"></i> Cot
+                    </button>
                     <input type="file" id="fileInput" hidden multiple accept=".xlsx, .xls, .csv" onchange="handleFileUpload(event)">
                     <input type="file" id="orderImageInput" hidden accept="image/*" capture="environment" onchange="handleOrderImageUpload(event)">
                 </div>
@@ -176,6 +179,23 @@
 
             <div id="pagination" class="pagination"></div>
         </main>
+    </div>
+
+    <div class="modal-mask" id="columnSettingsModal">
+        <form class="column-settings-modal" onsubmit="saveColumnSettings(event)">
+            <div class="modal-header">
+                <h2>Cai dat cot</h2>
+                <button type="button" class="icon-btn" onclick="closeColumnSettings()" title="Dong">
+                    <i data-lucide="x" style="width:18px;"></i>
+                </button>
+            </div>
+            <div id="columnSettingsList" class="column-settings-list"></div>
+            <div class="modal-actions">
+                <button type="button" class="secondary-btn" onclick="resetColumnSettings()">Mac dinh</button>
+                <button type="button" class="secondary-btn" onclick="closeColumnSettings()">Huy</button>
+                <button type="submit" class="primary-btn">Luu</button>
+            </div>
+        </form>
     </div>
 
     <div class="modal-mask" id="productModal">
@@ -220,7 +240,7 @@
     <datalist id="partnerFilterOptions"></datalist>
     <datalist id="idDonFilterOptions"></datalist>
     <datalist id="filterIdSpOptions"></datalist>
-    <script src="app.js?v=23"></script>
+    <script src="app.js?v=25"></script>
 </body>
 
 </html>
