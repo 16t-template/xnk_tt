@@ -1,10 +1,10 @@
-const CACHE_NAME = 'xnk-tt-shell-v27';
+const CACHE_NAME = 'xnk-tt-shell-v29';
 const APP_SHELL = [
   './',
   './index.html',
-  './styles.css?v=27',
-  './app.js?v=27',
-  './manifest.webmanifest?v=27',
+  './styles.css?v=29',
+  './app.js?v=29',
+  './manifest.webmanifest?v=29',
   './icons/xnk-tt.svg',
   './icons/xnk-tt-192.png',
   './icons/xnk-tt-512.png'

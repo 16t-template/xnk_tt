@@ -112,10 +112,6 @@
             display: none;
         }
 
-        .mobile-install-btn {
-            display: none;
-        }
-
         .kiem-kho-notice {
             position: fixed;
             left: 50%;
@@ -1361,22 +1357,8 @@
                 box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
             }
 
-            .mobile-appbar.install-available {
-                grid-template-columns: 44px minmax(0, 1fr) 44px 44px;
-            }
-
-            body.pull-reloading .mobile-reload-btn i {
-                animation: spin 0.65s linear infinite;
-            }
-
-            @keyframes spin {
-                from { transform: rotate(0deg); }
-                to { transform: rotate(360deg); }
-            }
-
             .mobile-menu-btn,
-            .mobile-reload-btn,
-            .mobile-install-btn {
+            .mobile-reload-btn {
                 width: 44px;
                 height: 44px;
                 border: 1px solid var(--border);
@@ -1387,11 +1369,6 @@
                 align-items: center;
                 justify-content: center;
                 cursor: pointer;
-            }
-
-            .mobile-install-btn.available {
-                display: flex;
-                color: var(--primary);
             }
 
             .mobile-brand {

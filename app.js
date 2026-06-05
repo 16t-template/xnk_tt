@@ -2597,28 +2597,10 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             }
         }
 
-        let deferredInstallPrompt = null;
-
-        function setInstallButtonAvailable(isAvailable) {
-            const appbar = document.querySelector('.mobile-appbar');
-            const installBtn = document.getElementById('installAppBtn');
-            if (appbar) appbar.classList.toggle('install-available', isAvailable);
-            if (installBtn) installBtn.classList.toggle('available', isAvailable);
-        }
-
-        async function installMobileApp() {
-            if (!deferredInstallPrompt) return;
-            deferredInstallPrompt.prompt();
-            await deferredInstallPrompt.userChoice;
-            deferredInstallPrompt = null;
-            setInstallButtonAvailable(false);
-        }
-
         function initializeMobileApp() {
             if (screen.orientation?.lock) {
                 screen.orientation.lock('portrait-primary').catch(() => { });
             }
-            initPullToReloadApp();
             window.addEventListener('online', syncPendingKiemKho);
             window.addEventListener('online', syncPendingDsSp);
             window.addEventListener('resize', () => {
@@ -2629,15 +2611,6 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                     renderTable();
                 }, 120);
             });
-            window.addEventListener('beforeinstallprompt', event => {
-                event.preventDefault();
-                deferredInstallPrompt = event;
-                setInstallButtonAvailable(true);
-            });
-            window.addEventListener('appinstalled', () => {
-                deferredInstallPrompt = null;
-                setInstallButtonAvailable(false);
-            });
             if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
                 let isReloadingForUpdate = false;
                 navigator.serviceWorker.addEventListener('controllerchange', () => {
@@ -2645,7 +2618,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                     isReloadingForUpdate = true;
                     window.location.reload();
                 });
-                navigator.serviceWorker.register('./sw.js?v=27', { updateViaCache: 'none' })
+                navigator.serviceWorker.register('./sw.js?v=29', { updateViaCache: 'none' })
                     .then(registration => registration.update())
                     .catch(error => {
                         console.warn('Khong the dang ky service worker:', error);
@@ -2653,31 +2626,6 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             }
             window.setTimeout(syncPendingKiemKho, 0);
             window.setTimeout(syncPendingDsSp, 0);
-        }
-
-        function initPullToReloadApp() {
-            let startY = 0;
-            let pulling = false;
-            let triggered = false;
-            window.addEventListener('touchstart', event => {
-                if (!isMobileLayout() || window.scrollY > 0) return;
-                startY = event.touches[0]?.clientY || 0;
-                pulling = startY > 0;
-                triggered = false;
-            }, { passive: true });
-            window.addEventListener('touchmove', event => {
-                if (!pulling || triggered || !isMobileLayout()) return;
-                const currentY = event.touches[0]?.clientY || 0;
-                const delta = currentY - startY;
-                if (delta > 95 && window.scrollY <= 0) {
-                    triggered = true;
-                    document.body.classList.add('pull-reloading');
-                    window.setTimeout(reloadApp, 80);
-                }
-            }, { passive: true });
-            window.addEventListener('touchend', () => {
-                pulling = false;
-            }, { passive: true });
         }
 
         initializeMobileApp();
