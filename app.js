@@ -1588,6 +1588,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
             if (!idSpInput) return;
             updateProductSuggestions(showSuggestions);
             updateKiemKhoHistory();
+            updateKhoHangHistory();
             if (tenSpInput) {
                 tenSpInput.value = getProductNameById(idSpInput.value);
             }
@@ -1767,6 +1768,57 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                         <table>
                             <thead><tr><th>ngay</th><th>id_sp</th><th>slg_ton</th><th>thuc_te</th><th>slg_lech</th><th>vi_tri</th></tr></thead>
                             <tbody id="kiemKhoHistoryBody">${renderKiemKhoHistoryBody(historyRows)}</tbody>
+                        </table>
+                    </div>
+                </section>`;
+        }
+
+        function getKhoHangHistoryRows(query = '') {
+            const headers = CONFIG.tabs.KHO_HANG.headers;
+            const idSpIdx = headers.indexOf('id_sp');
+            const term = String(query || '').trim().toLowerCase();
+            return allData
+                .filter(row => !term || String(row[idSpIdx] || '').toLowerCase().includes(term))
+                .slice(0, 30);
+        }
+
+        function renderKhoHangHistoryBody(historyRows) {
+            const headers = CONFIG.tabs.KHO_HANG.headers;
+            const index = header => headers.indexOf(header);
+            return historyRows.length
+                ? historyRows.map(row => `
+                    <tr>
+                        <td>${escapeHtml(row[index('kho')] || '')}</td>
+                        <td>${escapeHtml(row[index('qr')] || '')}</td>
+                        <td>${escapeHtml(row[index('id_sp')] || '')}</td>
+                        <td>${escapeHtml(row[index('ten_sp')] || '')}</td>
+                    </tr>`).join('')
+                : '<tr><td colspan="4" class="kiem-kho-history-empty">Chua co dong kho hang cho id_sp nay.</td></tr>';
+        }
+
+        function updateKhoHangHistory() {
+            if (currentTab !== 'KHO_HANG') return;
+            const idSpInput = document.querySelector('[data-field="id_sp"]');
+            const historyRows = getKhoHangHistoryRows(idSpInput?.value);
+            const body = document.getElementById('khoHangHistoryBody');
+            const count = document.getElementById('khoHangHistoryCount');
+            if (body) body.innerHTML = renderKhoHangHistoryBody(historyRows);
+            if (count) count.innerText = `${historyRows.length} dong`;
+        }
+
+        function renderKhoHangHistory() {
+            if (currentTab !== 'KHO_HANG') return '';
+            const historyRows = getKhoHangHistoryRows();
+            return `
+                <section class="kiem-kho-history">
+                    <div class="kiem-kho-history-title">
+                        <strong>Kho hang da co cua id_sp</strong>
+                        <span id="khoHangHistoryCount">${historyRows.length} dong</span>
+                    </div>
+                    <div class="kiem-kho-history-scroll">
+                        <table>
+                            <thead><tr><th>kho</th><th>qr</th><th>id_sp</th><th>ten_sp</th></tr></thead>
+                            <tbody id="khoHangHistoryBody">${renderKhoHangHistoryBody(historyRows)}</tbody>
                         </table>
                     </div>
                 </section>`;
@@ -1991,7 +2043,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                     return `<label><span>${header}</span><textarea id="formField_${idx}" data-field="${header}" rows="4">${value}</textarea></label>`;
                 }
                 return `<label><span>${header}</span><input id="formField_${idx}" data-field="${header}" type="text" value="${value}"${list}></label>`;
-            }).join('') + renderKiemKhoHistory();
+            }).join('') + renderKiemKhoHistory() + renderKhoHangHistory();
             updateProductName(!row, false);
             updateLineTotal();
         }
@@ -2675,7 +2727,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                     isReloadingForUpdate = true;
                     window.location.reload();
                 });
-                navigator.serviceWorker.register('./sw.js?v=32', { updateViaCache: 'none' })
+                navigator.serviceWorker.register('./sw.js?v=33', { updateViaCache: 'none' })
                     .then(registration => registration.update())
                     .catch(error => {
                         console.warn('Khong the dang ky service worker:', error);
